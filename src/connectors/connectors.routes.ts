@@ -21,6 +21,7 @@ import { CurveConfig } from './curve/curveswap.config';
 import { PlentyConfig } from './plenty/plenty.config';
 import { XRPLCLOBConfig } from './xrpl/xrpl.clob.config';
 import { KujiraConfig } from './kujira/kujira.config';
+import { XExchangeConfig } from './xexchange/xexchange.config';
 
 export namespace ConnectorsRoutes {
   export const router = Router();
@@ -98,6 +99,12 @@ export namespace ConnectorsRoutes {
             trading_type: RefConfig.config.tradingTypes,
             chain_type: RefConfig.config.chainType,
             available_networks: RefConfig.config.availableNetworks,
+          },
+          {
+            name: 'xexchange',
+            trading_type: XExchangeConfig.config.tradingTypes('swap'),
+            chain_type: XExchangeConfig.config.chainType,
+            available_networks: XExchangeConfig.config.availableNetworks,
           },
           {
             name: 'pancakeswap',

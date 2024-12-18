@@ -26,6 +26,7 @@ import {
   UniswapLPish,
   Xdcish,
   Tezosish,
+  XExchangeish,
   Multiversxish,
 } from './common-interfaces';
 import { Traderjoe } from '../connectors/traderjoe/traderjoe';
@@ -44,6 +45,7 @@ import { KujiraCLOB } from '../connectors/kujira/kujira';
 import { PancakeswapLP } from '../connectors/pancakeswap/pancakeswap.lp';
 import { XRPLCLOB } from '../connectors/xrpl/xrpl';
 import { Multiversx } from '../chains/multiversx/multiversx';
+import { XExchange } from '../connectors/xexchange/xexchange';
 
 export type ChainUnion =
   | Algorand
@@ -53,6 +55,7 @@ export type ChainUnion =
   | Xdcish
   | Tezosish
   | XRPLish
+  | Kujira
   | Multiversx;
 
 export type Chain<T> = T extends Algorand
@@ -150,6 +153,7 @@ export type ConnectorUnion =
   | UniswapLPish
   | Perpish
   | RefAMMish
+  | XExchangeish
   | CLOBish
   | Tinyman
   | Plenty
@@ -175,6 +179,8 @@ export type Connector<T> = T extends Uniswapish
   ? XRPLCLOB
   : T extends KujiraCLOB
   ? KujiraCLOB
+  : T extends Multiversxish
+  ? XExchangeish
   : never;
 
 export async function getConnector<T>(
@@ -211,6 +217,8 @@ export async function getConnector<T>(
     connectorInstance = VVSConnector.getInstance(chain, network);
   } else if (chain === 'near' && connector === 'ref') {
     connectorInstance = Ref.getInstance(chain, network);
+  } else if (chain === 'multiversx' && connector === 'xexchange') {
+    connectorInstance = XExchange.getInstance(chain, network);
   } else if (chain === 'binance-smart-chain' && connector === 'pancakeswap') {
     connectorInstance = PancakeSwap.getInstance(chain, network);
   } else if (chain === 'binance-smart-chain' && connector === 'pancakeswapLP') {

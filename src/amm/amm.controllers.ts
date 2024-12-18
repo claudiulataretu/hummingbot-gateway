@@ -64,6 +64,7 @@ import {
 } from '../services/connection-manager';
 import {
   Chain as Ethereumish,
+  Multiversxish,
   Nearish,
   NetworkSelectionRequest,
   Perpish,
@@ -71,14 +72,21 @@ import {
   Tezosish,
   Uniswapish,
   UniswapLPish,
+  XExchangeish,
 } from '../services/common-interfaces';
 import { Algorand } from '../chains/algorand/algorand';
 import { Tinyman } from '../connectors/tinyman/tinyman';
 import { Plenty } from '../connectors/plenty/plenty';
+import {
+  price as xexchangePrice,
+  trade as xexchangeTrade,
+} from '../connectors/xexchange/xexchange.controller';
+import { XExchange } from '../connectors/xexchange/xexchange';
+import { Multiversx } from '../chains/multiversx/multiversx';
 
 export async function price(req: PriceRequest): Promise<PriceResponse> {
   const chain = await getInitializedChain<
-    Algorand | Ethereumish | Nearish | Tezosish
+    Algorand | Ethereumish | Nearish | Tezosish | Multiversx
   >(req.chain, req.network);
   const connector: Uniswapish | RefAMMish | Tinyman | Plenty =
     await getConnector<Uniswapish | RefAMMish | Tinyman | Plenty>(
@@ -94,6 +102,8 @@ export async function price(req: PriceRequest): Promise<PriceResponse> {
     return uniswapPrice(<Ethereumish>chain, connector, req);
   } else if (connector instanceof Tinyman) {
     return tinymanPrice(chain as unknown as Algorand, connector, req);
+  } else if (connector instanceof XExchange) {
+    return xexchangePrice(<Multiversxish>chain, connector as XExchangeish, req);
   } else {
     return refPrice(<Nearish>chain, connector as RefAMMish, req);
   }
@@ -101,10 +111,10 @@ export async function price(req: PriceRequest): Promise<PriceResponse> {
 
 export async function trade(req: TradeRequest): Promise<TradeResponse> {
   const chain = await getInitializedChain<
-    Algorand | Ethereumish | Nearish | Tezosish
+    Algorand | Ethereumish | Nearish | Tezosish | Multiversxish
   >(req.chain, req.network);
-  const connector: Uniswapish | RefAMMish | Tinyman | Plenty =
-    await getConnector<Uniswapish | RefAMMish | Tinyman | Plenty>(
+  const connector: Uniswapish | RefAMMish | Tinyman | Plenty | XExchangeish =
+    await getConnector<Uniswapish | RefAMMish | Tinyman | Plenty | XExchange>(
       req.chain,
       req.network,
       req.connector
@@ -117,6 +127,12 @@ export async function trade(req: TradeRequest): Promise<TradeResponse> {
     return uniswapTrade(<Ethereumish>chain, connector, req);
   } else if (connector instanceof Tinyman) {
     return tinymanTrade(chain as unknown as Algorand, connector, req);
+  } else if (connector instanceof XExchange) {
+    return xexchangeTrade(
+      chain as unknown as Multiversxish,
+      connector as XExchangeish,
+      req
+    );
   } else {
     return refTrade(<Nearish>chain, connector as RefAMMish, req);
   }
@@ -196,6 +212,17 @@ export async function estimateGas(
       req.network,
       req.connector
     );
+
+  if (connector instanceof XExchange) {
+    return {
+      gasCost: '0',
+      gasLimit: 50000,
+      gasPrice: 1000000000,
+      gasPriceToken: 'EGLD',
+      network: req.network,
+      timestamp: Date.now(),
+    };
+  }
 
   if (connector instanceof Plenty) {
     return plentyEstimateGas(<Tezosish>chain, connector);

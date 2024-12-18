@@ -1,0 +1,51 @@
+import { ConfigManagerV2 } from '../../services/config-manager-v2';
+import { AvailableNetworks } from '../../services/config-manager-types';
+export namespace XExchangeConfig {
+  export interface NetworkConfig {
+    allowedSlippage: string;
+    gasLimitEstimate: number;
+    maximumHops: number;
+    routerAbi: string;
+    pairAbi: string;
+    routerAddress: (network: string) => string;
+    tradingTypes: (type: string) => Array<string>;
+    availableNetworks: Array<AvailableNetworks>;
+    useRouter?: boolean;
+    ttl: number;
+    chainType: string;
+  }
+
+  export const config: NetworkConfig = {
+    allowedSlippage: ConfigManagerV2.getInstance().get(
+      `xexchange.allowedSlippage`
+    ),
+    gasLimitEstimate: ConfigManagerV2.getInstance().get(
+      `xexchange.gasLimitEstimate`
+    ),
+    maximumHops: ConfigManagerV2.getInstance().get(`xexchange.maximumHops`),
+    tradingTypes: (type: string) => {
+      return type === 'swap' ? ['AMM'] : ['AMM_LP'];
+    },
+    routerAbi: ConfigManagerV2.getInstance().get(`xexchange.routerAbi`),
+    pairAbi: ConfigManagerV2.getInstance().get(`xexchange.pairAbi`),
+    routerAddress: (network: string) =>
+      ConfigManagerV2.getInstance().get(
+        `xexchange.contractAddresses.${network}.routerAddress`
+      ),
+    availableNetworks: [
+      {
+        chain: 'multiversx',
+        networks: Object.keys(
+          ConfigManagerV2.getInstance().get('xexchange.contractAddresses')
+        ).filter((network) =>
+          Object.keys(
+            ConfigManagerV2.getInstance().get('multiversx.networks')
+          ).includes(network)
+        ),
+      },
+    ],
+    useRouter: ConfigManagerV2.getInstance().get(`xexchange.useRouter`),
+    ttl: ConfigManagerV2.getInstance().get(`xexchange.ttl`),
+    chainType: 'MVX',
+  };
+}

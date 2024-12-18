@@ -1,0 +1,29 @@
+# how much the execution price is allowed to move unfavorably from the trade
+# execution price. It uses a rational number for precision.
+allowedSlippage: '2/100'
+
+# the maximum gas used to estimate gasCost for a uniswap trade.
+gasLimitEstimate: 25000000
+
+# how long a trade is valid in seconds. After time passes uniswap will not
+# perform the trade, but the gas will still be sent.
+ttl: 600
+
+# For each swap, the maximum number of hops to consider. 
+# Note: More hops will increase latency of the algorithm.
+maximumHops: 1
+
+# Use Uniswap Router or Quoter to quote prices.
+# true - use Smart Order Router
+# false - use QuoterV2 Contract
+useRouter: false
+ttl: 300
+
+routerAbi: 'src/connectors/xexchange/router.abi.json'
+pairAbi: 'src/connectors/xexchange/pair.abi.json'
+
+contractAddresses:
+  mainnet:
+    routerAddress: 'erd1qqqqqqqqqqqqqpgqq66xk9gfr4esuhem3jru86wg5hvp33a62jps2fy57p'
+  testnet:
+    routerAddress: 'erd1qqqqqqqqqqqqqpgqfd2apcqxxmvngsnhmq4xfq22pfnq7gctexksm0gudw'
