@@ -1,0 +1,16 @@
+[
+  {
+    "chainId": "T",
+    "name": "WrappedEGLD",
+    "symbol": "EGLD",
+    "identifier": "WEGLD-dd8471",
+    "decimals": 18
+  },
+  {
+    "chainId": "T",
+    "name": "USDC",
+    "symbol": "USDC",
+    "identifier": "USDC-5bee92",
+    "decimals": 6
+  }
+]

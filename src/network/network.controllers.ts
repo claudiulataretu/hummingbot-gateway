@@ -20,6 +20,7 @@ import {
   UnsupportedChainException,
 } from '../services/connection-manager';
 import { XRPL } from '../chains/xrpl/xrpl';
+import { Multiversx } from '../chains/multiversx/multiversx';
 
 export async function getStatus(
   req: StatusRequest
@@ -87,6 +88,11 @@ export async function getStatus(
     const nearConnections = Near.getConnectedInstances();
     connections = connections.concat(
       nearConnections ? Object.values(nearConnections) : []
+    );
+
+    const multiversxConnections = Multiversx.getConnectedInstances();
+    connections = connections.concat(
+      multiversxConnections ? Object.values(multiversxConnections) : []
     );
 
     const bscConnections = BinanceSmartChain.getConnectedInstances();

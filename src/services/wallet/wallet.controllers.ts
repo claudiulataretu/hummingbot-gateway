@@ -34,6 +34,7 @@ import {
 } from '../connection-manager';
 import { Ethereumish, Tezosish } from '../common-interfaces';
 import { Algorand } from '../../chains/algorand/algorand';
+import { Multiversx } from '../../chains/multiversx/multiversx';
 
 export function convertXdcAddressToEthAddress(publicKey: string): string {
   return publicKey.length === 43 && publicKey.slice(0, 3) === 'xdc'
@@ -119,6 +120,11 @@ export async function addWallet(
           <string>req.address
         )
       ).accountId;
+      encryptedPrivateKey = connection.encrypt(req.privateKey, passphrase);
+    } else if (connection instanceof Multiversx) {
+      address = connection
+        .getWalletFromPrivateKey(req.privateKey)
+        .address.bech32();
       encryptedPrivateKey = connection.encrypt(req.privateKey, passphrase);
     } else if (connection instanceof Tezos) {
       const tezosWallet = await connection.getWalletFromPrivateKey(

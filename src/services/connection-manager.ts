@@ -26,6 +26,7 @@ import {
   UniswapLPish,
   Xdcish,
   Tezosish,
+  Multiversxish,
 } from './common-interfaces';
 import { Traderjoe } from '../connectors/traderjoe/traderjoe';
 import { Sushiswap } from '../connectors/sushiswap/sushiswap';
@@ -42,6 +43,7 @@ import { Kujira } from '../chains/kujira/kujira';
 import { KujiraCLOB } from '../connectors/kujira/kujira';
 import { PancakeswapLP } from '../connectors/pancakeswap/pancakeswap.lp';
 import { XRPLCLOB } from '../connectors/xrpl/xrpl';
+import { Multiversx } from '../chains/multiversx/multiversx';
 
 export type ChainUnion =
   | Algorand
@@ -51,7 +53,7 @@ export type ChainUnion =
   | Xdcish
   | Tezosish
   | XRPLish
-  | Kujira;
+  | Multiversx;
 
 export type Chain<T> = T extends Algorand
   ? Algorand
@@ -69,6 +71,8 @@ export type Chain<T> = T extends Algorand
   ? XRPLish
   : T extends KujiraCLOB
   ? KujiraCLOB
+  : T extends Multiversx
+  ? Multiversx
   : never;
 
 export class UnsupportedChainException extends Error {
@@ -132,6 +136,8 @@ export async function getChainInstance(
     connection = XRPL.getInstance(network);
   } else if (chain === 'kujira') {
     connection = Kujira.getInstance(network);
+  } else if (chain === 'multiversx') {
+    connection = Multiversx.getInstance(network);
   } else {
     connection = undefined;
   }

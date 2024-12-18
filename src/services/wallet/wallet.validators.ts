@@ -12,6 +12,7 @@ import {
   invalidXRPLPrivateKeyError,
   isXRPLSeedKey,
 } from '../../chains/xrpl/xrpl.validators';
+import { UserSecretKey } from '@multiversx/sdk-wallet/out';
 
 export const invalidAlgorandPrivateKeyOrMnemonicError: string =
   'The privateKey param is not a valid Algorand private key or mnemonic.';
@@ -27,6 +28,9 @@ export const invalidCosmosPrivateKeyError: string =
 
 export const invalidTezosPrivateKeyError: string =
   'The privateKey param is not a valid Tezos private key.';
+
+export const invalidMultiversxPrivateKeyError: string =
+  'The privateKey param is not a valid Multiversx private key.';
 
 export const isAlgorandPrivateKeyOrMnemonic = (str: string): boolean => {
   const parts = str.split(' ');
@@ -64,6 +68,15 @@ export const isTezosPrivateKey = (str: string): boolean => {
     }
     return true;
   } catch {
+    return false;
+  }
+};
+
+export const isMultiversxPrivateKey = (str: string): boolean => {
+  try {
+    const userSecretKey = UserSecretKey.fromString(str);
+    return userSecretKey !== undefined;
+  } catch (error) {
     return false;
   }
 };
@@ -137,6 +150,11 @@ export const validatePrivateKey: Validator = mkSelectingValidator(
       'privateKey',
       invalidKujiraPrivateKeyError,
       (val) => typeof val === 'string' && isKujiraPrivateKey(val)
+    ),
+    multiversx: mkValidator(
+      'privateKey',
+      invalidMultiversxPrivateKeyError,
+      (val) => typeof val === 'string' && isMultiversxPrivateKey(val)
     ),
   }
 );

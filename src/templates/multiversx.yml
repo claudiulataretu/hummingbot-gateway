@@ -1,0 +1,16 @@
+networks:
+  mainnet:
+    chainID: '1'
+    nodeURL: https://gateway.multiversx.com
+    tokenListType: FILE
+    nativeCurrencySymbol: EGLD
+    tokenListSource: /home/gateway/conf/lists/multiversx_tokens.json
+  testnet:
+    chainID: T
+    nodeURL: https://testnet-gateway.multiversx.com
+    tokenListType: FILE
+    tokenListSource: /home/gateway/conf/lists/multiversx_testnet_tokens.json
+    nativeCurrencySymbol: EGLD
+
+gasLimitTransaction: 30000000
+ 

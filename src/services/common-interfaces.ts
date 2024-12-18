@@ -109,6 +109,14 @@ import {
 import { BalanceRequest } from '../network/network.requests';
 import { TradeV2 } from '@traderjoe-xyz/sdk-v2';
 import { CurveTrade } from '../connectors/curve/curve';
+import {
+  MultiversxBase,
+  TokenInfo,
+} from '../chains/multiversx/multiversx-base';
+import { ExpectedTrade as MXVExpectedTrade } from '../connectors/xexchange/xexchange';
+import { Transaction as TransactionMVX } from '@multiversx/sdk-core';
+import { UserSigner } from '@multiversx/sdk-wallet/out';
+import { BigNumber as BigNumberJS } from 'bignumber.js';
 
 // TODO Check the possibility to have clob/solana/serum equivalents here
 //  Check this link https://hummingbot.org/developers/gateway/building-gateway-connectors/#5-add-sdk-classes-to-uniswapish-interface
@@ -298,6 +306,92 @@ export interface Uniswapish {
     maxPriorityFeePerGas?: BigNumber,
     allowedSlippage?: string
   ): Promise<Transaction>;
+}
+
+export interface XExchangeish {
+  /**
+   * Router address.
+   */
+  router: string;
+
+  /**
+   * Default gas estiamte for swap transactions.
+   */
+  gasLimitEstimate: number;
+
+  /**
+   * Default time-to-live for swap transactions, in seconds.
+   */
+  ttl: number;
+
+  init(): Promise<void>;
+
+  ready(): boolean;
+
+  balances?(req: BalanceRequest): Promise<Record<string, string>>;
+
+  getPrice(baseToken: TokenInfo, quoteToken: TokenInfo): Promise<string>;
+
+  /**
+   * Given the amount of `baseToken` to put into a transaction, calculate the
+   * amount of `quoteToken` that can be expected from the transaction.
+   *
+   * This is typically used for calculating token sell prices.
+   *
+   * @param baseToken Token input for the transaction
+   * @param quoteToken Output from the transaction
+   * @param amount Amount of `baseToken` to put into the transaction
+   */
+  estimateSellTrade(
+    baseToken: string,
+    quoteToken: string,
+    amount: BigNumberJS,
+    allowedSlippage?: string
+  ): Promise<{
+    trade: any;
+    expectedAmount: string;
+  }>;
+
+  /**
+   * Given the amount of `baseToken` desired to acquire from a transaction,
+   * calculate the amount of `quoteToken` needed for the transaction.
+   *
+   * This is typically used for calculating token buy prices.
+   *
+   * @param quoteToken Token input for the transaction
+   * @param baseToken Token output from the transaction
+   * @param amount Amount of `baseToken` desired from the transaction
+   */
+  estimateBuyTrade(
+    quoteToken: string,
+    baseToken: string,
+    amount: BigNumberJS,
+    allowedSlippage?: string
+  ): Promise<{
+    trade: any;
+    expectedAmount: string;
+  }>;
+
+  /**
+   * Given a wallet and a Uniswap-ish trade, try to execute it on blockchain.
+   *
+   * @param wallet Wallet
+   * @param trade Expected trade
+   * @param gasPrice Base gas price, for pre-EIP1559 transactions
+   * @param uniswapRouter Router smart contract address
+   * @param ttl How long the swap is valid before expiry, in seconds
+   * @param abi Router contract ABI
+   * @param gasLimit Gas limit
+   * @param nonce (Optional) EVM transaction nonce
+   * @param maxFeePerGas (Optional) Maximum total fee per gas you want to pay
+   * @param maxPriorityFeePerGas (Optional) Maximum tip per gas you want to pay
+   */
+  executeTrade(
+    wallet: UserSigner,
+    trade: MXVExpectedTrade,
+    gasLimit: number,
+    allowedSlippage?: string
+  ): Promise<TransactionMVX>;
 }
 
 export interface RefAMMish {
@@ -709,6 +803,8 @@ export interface Nearish extends BasicChainMethods, NearBase {
   cancelTx(account: Account, nonce: number): Promise<string>;
   getContract(tokenAddress: string, account: Account): NearContract;
 }
+
+export interface Multiversxish extends BasicChainMethods, MultiversxBase {}
 
 export interface Cosmosish extends CosmosBase {
   gasPrice: number;

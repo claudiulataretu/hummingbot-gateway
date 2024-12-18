@@ -1,0 +1,20 @@
+[
+  {
+    "chainId": "1",
+    "name": "WrappedEGLD",
+    "symbol": "WEGLD-bd4d79",
+    "decimals": 18
+  },
+  {
+    "chainId": "1",
+    "name": "USDC",
+    "symbol": "USDC-c76f1f",
+    "decimals": 6
+  },
+  {
+    "chainId": "1",
+    "name": "USDT",
+    "symbol": "USDT-f8c08c",
+    "decimals": 6
+  }
+]
