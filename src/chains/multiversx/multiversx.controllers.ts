@@ -109,11 +109,27 @@ export class MultiversxController {
     const currentBlock = await multiversxish.getCurrentBlockNumber();
     const txReceipt = await multiversxish.getTransaction(body.txHash);
     let txStatus = -1;
+
+    if (typeof txReceipt.status !== 'object') {
+      txStatus = 0;
+      logger.info(
+        `Poll ${multiversxish.chain}, txHash ${body.txHash}, txReceipt ${txReceipt}.`
+      );
+    }
+
     if (
       typeof txReceipt.status === 'object' &&
       txReceipt.status.isSuccessful()
     ) {
       txStatus = 1;
+    }
+
+    if (typeof txReceipt.status === 'object' && txReceipt.status.isPending()) {
+      txStatus = 0;
+    }
+
+    if (typeof txReceipt.status === 'object' && txReceipt.status.isFailed()) {
+      txStatus = -1;
     }
 
     logger.info(
