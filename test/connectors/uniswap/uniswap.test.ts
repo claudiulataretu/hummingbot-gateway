@@ -24,19 +24,19 @@ let mockProvider: typeof MockProvider;
 
 const WETH = new Token(
   3,
-  '0xd0A1E359811322d97991E03f863a0C30C2cF029C',
+  '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14',
   18,
   'WETH'
 );
 
 const DAI = new Token(
   3,
-  '0x4f96fe3b7a6cf9725f59d353f723c1bdb64ca6aa',
+  '0xFF34B3d4Aee8ddCd6F9AFFFB6Fe49bD371b8a357',
   18,
   'DAI'
 );
 
-const DAI_WETH_POOL_ADDRESS = '0xBEff876AC507446457C2A6bDA9F7021A97A8547f';
+const DAI_WETH_POOL_ADDRESS = '0x122450AE55BD9B74768A128Bda99906351F81827';
 const POOL_SQRT_RATIO_START = encodeSqrtRatioX96(100e6, 100e18);
 const POOL_TICK_CURRENT = TickMath.getTickAtSqrtRatio(POOL_SQRT_RATIO_START);
 const POOL_LIQUIDITY = 0;
@@ -50,7 +50,7 @@ const DAI_WETH_POOL = new UniswapV3Pool(
 );
 
 beforeAll(async () => {
-  ethereum = Ethereum.getInstance('goerli');
+  ethereum = Ethereum.getInstance('sepolia');
   patchEVMNonceManager(ethereum.nonceManager);
   await ethereum.init();
 });
@@ -68,49 +68,51 @@ afterAll(async () => {
 });
 
 const patchTrade = (_key: string, error?: Error) => {
-  patch(uniswap.alphaRouter, 'route', () => {
-    if (error) return false;
-    const WETH_DAI = new Pair(
-      CurrencyAmount.fromRawAmount(WETH, '2000000000000000000'),
-      CurrencyAmount.fromRawAmount(DAI, '1000000000000000000')
-    );
-    const DAI_TO_WETH = new Route([WETH_DAI], DAI, WETH);
-    return {
-      quote: CurrencyAmount.fromRawAmount(DAI, '1000000000000000000'),
-      quoteGasAdjusted: CurrencyAmount.fromRawAmount(
-        DAI,
-        '1000000000000000000'
-      ),
-      estimatedGasUsed: utils.parseEther('100'),
-      estimatedGasUsedQuoteToken: CurrencyAmount.fromRawAmount(
-        DAI,
-        '1000000000000000000'
-      ),
-      estimatedGasUsedUSD: CurrencyAmount.fromRawAmount(
-        DAI,
-        '1000000000000000000'
-      ),
-      gasPriceWei: utils.parseEther('100'),
-      trade: new Trade({
-        v2Routes: [
-          {
-            routev2: DAI_TO_WETH,
-            inputAmount: CurrencyAmount.fromRawAmount(
-              DAI,
-              '1000000000000000000'
-            ),
-            outputAmount: CurrencyAmount.fromRawAmount(
-              WETH,
-              '2000000000000000000'
-            ),
-          },
-        ],
-        v3Routes: [],
-        tradeType: TradeType.EXACT_INPUT,
-      }),
-      route: [],
-      blockNumber: BigNumber.from(5000),
-    };
+  patch(uniswap, '_alphaRouter', {
+    route() {
+      if (error) return false;
+      const WETH_DAI = new Pair(
+        CurrencyAmount.fromRawAmount(WETH, '2000000000000000000'),
+        CurrencyAmount.fromRawAmount(DAI, '1000000000000000000')
+      );
+      const DAI_TO_WETH = new Route([WETH_DAI], DAI, WETH);
+      return {
+        quote: CurrencyAmount.fromRawAmount(DAI, '1000000000000000000'),
+        quoteGasAdjusted: CurrencyAmount.fromRawAmount(
+          DAI,
+          '1000000000000000000'
+        ),
+        estimatedGasUsed: utils.parseEther('100'),
+        estimatedGasUsedQuoteToken: CurrencyAmount.fromRawAmount(
+          DAI,
+          '1000000000000000000'
+        ),
+        estimatedGasUsedUSD: CurrencyAmount.fromRawAmount(
+          DAI,
+          '1000000000000000000'
+        ),
+        gasPriceWei: utils.parseEther('100'),
+        trade: new Trade({
+          v2Routes: [
+            {
+              routev2: DAI_TO_WETH,
+              inputAmount: CurrencyAmount.fromRawAmount(
+                DAI,
+                '1000000000000000000'
+              ),
+              outputAmount: CurrencyAmount.fromRawAmount(
+                WETH,
+                '2000000000000000000'
+              ),
+            },
+          ],
+          v3Routes: [],
+          tradeType: TradeType.EXACT_INPUT,
+        }),
+        route: [],
+        blockNumber: BigNumber.from(5000),
+      };
+    }
   });
 };
 
@@ -123,12 +125,12 @@ const patchMockProvider = () => {
   mockProvider.stub(FACTORY_ADDRESS, 'getPool', DAI_WETH_POOL_ADDRESS);
 
   mockProvider.setMockContract(
-    UniswapConfig.config.quoterContractAddress('goerli'),
+    UniswapConfig.config.quoterContractAddress('ethereum', 'sepolia'),
     require('@uniswap/swap-router-contracts/artifacts/contracts/lens/QuoterV2.sol/QuoterV2.json')
       .abi
   );
   mockProvider.stub(
-    UniswapConfig.config.quoterContractAddress('goerli'),
+    UniswapConfig.config.quoterContractAddress('ethereum', 'sepolia'),
     'quoteExactInputSingle',
     /* amountOut */ 1,
     /* sqrtPriceX96After */ 0,
@@ -136,7 +138,7 @@ const patchMockProvider = () => {
     /* gasEstimate */ 0
   );
   mockProvider.stub(
-    UniswapConfig.config.quoterContractAddress('goerli'),
+    UniswapConfig.config.quoterContractAddress('ethereum', 'sepolia'),
     'quoteExactOutputSingle',
     /* amountIn */ 1,
     /* sqrtPriceX96After */ 0,
@@ -161,6 +163,7 @@ const patchMockProvider = () => {
     /* unlocked */ true
   );
   mockProvider.stub(DAI_WETH_POOL_ADDRESS, 'liquidity', 0);
+  mockProvider.stub(DAI_WETH_POOL_ADDRESS, 'fee', FeeAmount.LOW);
   patch(ethereum, 'provider', () => {
     return mockProvider;
   });
@@ -180,7 +183,7 @@ const useRouter = async () => {
   config.useRouter = true;
 
   patch(Uniswap, '_instances', () => ({}));
-  uniswap = Uniswap.getInstance('ethereum', 'goerli');
+  uniswap = Uniswap.getInstance('ethereum', 'sepolia');
   await uniswap.init();
 };
 
@@ -190,7 +193,7 @@ const useQouter = async () => {
   config.feeTier = 'MEDIUM';
 
   patch(Uniswap, '_instances', () => ({}));
-  uniswap = Uniswap.getInstance('ethereum', 'goerli');
+  uniswap = Uniswap.getInstance('ethereum', 'sepolia');
   await uniswap.init();
 
   mockProvider = new MockProvider();
