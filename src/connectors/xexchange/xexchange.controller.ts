@@ -117,22 +117,7 @@ export async function price(
 
   const gasPrice: number = multiversxish.gasPrice;
   const gasLimitTransaction: number = multiversxish.gasLimitTransaction;
-  const gasLimitEstimate: number = xexchangeinsh.gasLimitEstimate;
   const expectedAmount: string = new BigNumber(price).toFixed();
-
-  // let estimatedPrice: string;
-
-  // if (req.side === 'BUY') {
-  //   estimatedPrice = new BigNumber(tradeInfo.expectedTrade.trade.inputAmount)
-  //     .div(10 ** tradeInfo.quoteToken.decimals)
-  //     .div(req.amount)
-  //     .toFixed(9);
-  // } else {
-  //   estimatedPrice = new BigNumber(tradeInfo.expectedTrade.trade.outputAmount)
-  //     .div(10 ** tradeInfo.quoteToken.decimals)
-  //     .div(req.amount)
-  //     .toFixed(9);
-  // }
 
   logger.info(
     JSON.stringify({
@@ -162,7 +147,7 @@ export async function price(
     gasPrice: gasPrice,
     gasPriceToken: multiversxish.nativeTokenSymbol,
     gasLimit: gasLimitTransaction,
-    gasCost: String((gasPrice * gasLimitEstimate) / 1e18),
+    gasCost: '0.0004',
   };
 }
 
