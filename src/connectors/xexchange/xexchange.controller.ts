@@ -14,19 +14,21 @@ import {
   UNKNOWN_ERROR_ERROR_CODE,
   UNKNOWN_ERROR_MESSAGE,
 } from '../../services/error-handler';
-import { latency } from '../../services/base';
-import { Multiversxish, XExchangeish } from '../../services/common-interfaces';
+import { gasCostInEthString, latency } from '../../services/base';
 import { logger } from '../../services/logger';
+import { ExpectedTrade, XExchange } from './xexchange';
+import { UserSigner } from '@multiversx/sdk-wallet/out';
+import { TokenInfo } from '../../chains/multiversx/multiversx-base';
+import BigNumber from 'bignumber.js';
 import {
+  EstimateGasResponse,
   PriceRequest,
   PriceResponse,
   TradeRequest,
   TradeResponse,
-} from '../../amm/amm.requests';
-import { ExpectedTrade } from './xexchange';
-import { UserSigner } from '@multiversx/sdk-wallet/out';
-import { TokenInfo } from '../../chains/multiversx/multiversx-base';
-import BigNumber from 'bignumber.js';
+} from '../connector.requests';
+import { Multiversx } from '../../chains/multiversx/multiversx';
+import { wrapResponse } from '../../services/response-wrapper';
 
 export interface TradeInfo {
   baseToken: TokenInfo;
@@ -36,38 +38,32 @@ export interface TradeInfo {
 }
 
 export async function getTradeInfo(
-  multiversxish: Multiversxish,
-  xexchangeinsh: XExchangeish,
+  multiversx: Multiversx,
+  xexchange: XExchange,
   baseAsset: string,
   quoteAsset: string,
   amount: string,
   tradeSide: string,
-  allowedSlippage?: string
 ): Promise<TradeInfo> {
-  const baseToken: TokenInfo = getFullTokenFromSymbol(multiversxish, baseAsset);
-  const quoteToken: TokenInfo = getFullTokenFromSymbol(
-    multiversxish,
-    quoteAsset
-  );
+  const baseToken: TokenInfo = getFullTokenFromSymbol(multiversx, baseAsset);
+  const quoteToken: TokenInfo = getFullTokenFromSymbol(multiversx, quoteAsset);
 
   const rawAmount = new BigNumber(amount).multipliedBy(
-    10 ** baseToken.decimals
+    10 ** baseToken.decimals,
   );
 
   let expectedTrade: ExpectedTrade;
   if (tradeSide === 'BUY') {
-    expectedTrade = await xexchangeinsh.estimateBuyTrade(
+    expectedTrade = await xexchange.estimateBuyTrade(
       quoteToken.identifier,
       baseToken.identifier,
       rawAmount,
-      allowedSlippage
     );
   } else {
-    expectedTrade = await xexchangeinsh.estimateSellTrade(
+    expectedTrade = await xexchange.estimateSellTrade(
       baseToken.identifier,
       quoteToken.identifier,
       rawAmount,
-      allowedSlippage
     );
   }
 
@@ -80,96 +76,93 @@ export async function getTradeInfo(
 }
 
 export async function price(
-  multiversxish: Multiversxish,
-  xexchangeinsh: XExchangeish,
-  req: PriceRequest
+  multiversx: Multiversx,
+  xexchange: XExchange,
+  req: PriceRequest,
 ): Promise<PriceResponse> {
   const startTimestamp: number = Date.now();
 
-  const baseToken: TokenInfo = getFullTokenFromSymbol(multiversxish, req.base);
-  const quoteToken: TokenInfo = getFullTokenFromSymbol(
-    multiversxish,
-    req.quote
-  );
+  const baseToken: TokenInfo = getFullTokenFromSymbol(multiversx, req.base);
+  const quoteToken: TokenInfo = getFullTokenFromSymbol(multiversx, req.quote);
 
   let price: string;
   try {
-    price = await xexchangeinsh.getPrice(baseToken, quoteToken);
+    price = await xexchange.getPrice(baseToken, quoteToken);
   } catch (e) {
     if (e instanceof Error) {
       throw new HttpException(
         500,
         PRICE_FAILED_ERROR_MESSAGE + e.message,
-        PRICE_FAILED_ERROR_CODE
+        PRICE_FAILED_ERROR_CODE,
       );
     } else {
       throw new HttpException(
         500,
         UNKNOWN_ERROR_MESSAGE,
-        UNKNOWN_ERROR_ERROR_CODE
+        UNKNOWN_ERROR_ERROR_CODE,
       );
     }
   }
 
   const rawAmount = new BigNumber(req.amount).multipliedBy(
-    10 ** baseToken.decimals
+    10 ** baseToken.decimals,
   );
 
-  const gasPrice: number = multiversxish.gasPrice;
-  const gasLimitTransaction: number = multiversxish.gasLimitTransaction;
+  const gasPrice: number = multiversx.gasPrice;
+  const gasLimitTransaction: number = multiversx.gasLimitTransaction;
   const expectedAmount: string = new BigNumber(price).toFixed();
 
   logger.info(
     JSON.stringify({
-      network: multiversxish.chain,
+      network: multiversx.chain,
       timestamp: startTimestamp,
       latency: latency(startTimestamp, Date.now()),
       side: req.side,
       base: req.base,
       quote: req.quote,
       amount: req.amount,
-      rawAmount: rawAmount.toString(),
+      rawAmount: rawAmount.toFixed(),
       expectedAmount: expectedAmount,
       price: price,
-    })
+    }),
   );
 
   return {
-    network: multiversxish.chain,
+    network: multiversx.chain,
     timestamp: startTimestamp,
     latency: latency(startTimestamp, Date.now()),
     base: req.base,
     quote: req.quote,
     amount: req.amount,
-    rawAmount: rawAmount.toString(),
+    rawAmount: rawAmount.toFixed(),
     expectedAmount: expectedAmount,
     price: price,
     gasPrice: gasPrice,
-    gasPriceToken: multiversxish.nativeTokenSymbol,
+    gasPriceToken: multiversx.nativeTokenSymbol,
     gasLimit: gasLimitTransaction,
     gasCost: '0.0004',
   };
 }
 
 export async function trade(
-  multiversxish: Multiversxish,
-  xexchangeinsh: XExchangeish,
-  req: TradeRequest
+  multiversx: Multiversx,
+  xexchange: XExchange,
+  req: TradeRequest,
 ): Promise<TradeResponse> {
   const startTimestamp: number = Date.now();
 
   const limitPrice = req.limitPrice;
-  const account: UserSigner = await multiversxish.getWallet(req.address);
+  const account: UserSigner = await multiversx.getWallet(req.address);
 
   let tradeInfo: TradeInfo;
   try {
     tradeInfo = await getTradeInfo(
-      multiversxish,
-      xexchangeinsh,
+      multiversx,
+      xexchange,
       req.base,
       req.quote,
       req.amount,
-      req.side
+      req.side,
     );
   } catch (e) {
     if (e instanceof Error) {
@@ -177,21 +170,21 @@ export async function trade(
       throw new HttpException(
         500,
         TRADE_FAILED_ERROR_MESSAGE + e.message,
-        TRADE_FAILED_ERROR_CODE
+        TRADE_FAILED_ERROR_CODE,
       );
     } else {
       logger.error('Unknown error trying to get trade info.');
       throw new HttpException(
         500,
         UNKNOWN_ERROR_MESSAGE,
-        UNKNOWN_ERROR_ERROR_CODE
+        UNKNOWN_ERROR_ERROR_CODE,
       );
     }
   }
 
-  const gasPrice: number = multiversxish.gasPrice;
-  const gasLimitTransaction: number = multiversxish.gasLimitTransaction;
-  const gasLimitEstimate: number = xexchangeinsh.gasLimitEstimate;
+  const gasPrice: number = multiversx.gasPrice;
+  const gasLimitTransaction: number = multiversx.gasLimitTransaction;
+  const gasLimitEstimate: number = xexchange.gasLimitEstimate;
 
   const expectedAmount: string = tradeInfo.expectedTrade.trade.inputAmount;
 
@@ -211,7 +204,7 @@ export async function trade(
 
   logger.info(
     `Expected execution price is ${estimatedPrice}, ` +
-      `limit price is ${limitPrice}.`
+      `limit price is ${limitPrice}.`,
   );
 
   if (req.side === 'BUY') {
@@ -221,40 +214,39 @@ export async function trade(
         500,
         SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_MESSAGE(
           estimatedPrice,
-          limitPrice
+          limitPrice,
         ),
-        SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_CODE
+        SWAP_PRICE_EXCEEDS_LIMIT_PRICE_ERROR_CODE,
       );
     }
 
-    const tx = await xexchangeinsh.executeTrade(
+    const tx = await xexchange.executeTrade(
       account,
       tradeInfo.expectedTrade,
-      xexchangeinsh.gasLimitEstimate,
-      req.allowedSlippage
+      xexchange.gasLimitEstimate,
     );
     console.log(tx.getData().toString());
     const signature = await account.sign(tx.serializeForSigning());
-    tx.applySignature(signature);
-    const txHash = await multiversxish.provider.sendTransaction(tx);
+    tx.applySignature(new Uint8Array(signature));
+    // const txHash = await multiversx.provider.sendTransaction(tx);
 
     logger.info(`Buy xExchange swap has been executed.`);
 
     return {
-      network: multiversxish.chain,
+      network: multiversx.chain,
       timestamp: startTimestamp,
       latency: latency(startTimestamp, Date.now()),
       base: tradeInfo.baseToken.symbol,
       quote: tradeInfo.quoteToken.symbol,
       amount: req.amount,
-      rawAmount: tradeInfo.requestAmount.toString(),
+      rawAmount: tradeInfo.requestAmount,
       expectedIn: expectedAmount,
       price: estimatedPrice,
       gasPrice: gasPrice,
-      gasPriceToken: multiversxish.nativeTokenSymbol,
+      gasPriceToken: multiversx.nativeTokenSymbol,
       gasLimit: gasLimitTransaction,
       gasCost: String((gasPrice * gasLimitEstimate) / 1e24),
-      txHash: txHash,
+      txHash: '',
     };
   } else {
     if (limitPrice && new Decimal(estimatedPrice).lt(new Decimal(limitPrice))) {
@@ -263,56 +255,75 @@ export async function trade(
         500,
         SWAP_PRICE_LOWER_THAN_LIMIT_PRICE_ERROR_MESSAGE(
           estimatedPrice,
-          limitPrice
+          limitPrice,
         ),
-        SWAP_PRICE_LOWER_THAN_LIMIT_PRICE_ERROR_CODE
+        SWAP_PRICE_LOWER_THAN_LIMIT_PRICE_ERROR_CODE,
       );
     }
 
-    const tx = await xexchangeinsh.executeTrade(
+    const tx = await xexchange.executeTrade(
       account,
       tradeInfo.expectedTrade,
-      xexchangeinsh.gasLimitEstimate,
-      req.allowedSlippage
+      xexchange.gasLimitEstimate,
     );
     console.log(tx.getData().toString());
     const signature = await account.sign(tx.serializeForSigning());
-    tx.applySignature(signature);
-    const txHash = await multiversxish.provider.sendTransaction(tx);
+    tx.applySignature(new Uint8Array(signature));
+    // const txHash = await multiversx.provider.sendTransaction(tx);
 
     logger.info(`Sell xExchange swap has been executed.`);
 
     return {
-      network: multiversxish.chain,
+      network: multiversx.chain,
       timestamp: startTimestamp,
       latency: latency(startTimestamp, Date.now()),
       base: tradeInfo.baseToken.symbol,
       quote: tradeInfo.quoteToken.symbol,
       amount: req.amount,
-      rawAmount: tradeInfo.requestAmount.toString(),
+      rawAmount: tradeInfo.requestAmount,
       expectedOut: expectedAmount,
       price: estimatedPrice,
       gasPrice: gasPrice,
-      gasPriceToken: multiversxish.nativeTokenSymbol,
+      gasPriceToken: multiversx.nativeTokenSymbol,
       gasLimit: gasLimitTransaction,
       gasCost: String((gasPrice * gasLimitEstimate) / 1e24),
-      txHash: txHash,
+      txHash: '',
     };
   }
 }
 
 export function getFullTokenFromSymbol(
-  multiversxish: Multiversxish,
-  tokenSymbol: string
+  multiversx: Multiversx,
+  tokenSymbol: string,
 ): TokenInfo {
   const tokenInfo: TokenInfo | undefined =
-    multiversxish.getTokenBySymbol(tokenSymbol);
+    multiversx.getTokenBySymbol(tokenSymbol);
 
   if (!tokenInfo)
     throw new HttpException(
       500,
       TOKEN_NOT_SUPPORTED_ERROR_MESSAGE + tokenSymbol,
-      TOKEN_NOT_SUPPORTED_ERROR_CODE
+      TOKEN_NOT_SUPPORTED_ERROR_CODE,
     );
   return tokenInfo;
+}
+
+export async function estimateGas(
+  multiversx: Multiversx,
+  xexchange: XExchange,
+): Promise<EstimateGasResponse> {
+  const initTime = Date.now();
+  const gasPrice: number = 0.000000001;
+  const xexchangeGasLimit: number = xexchange.gasLimitEstimate;
+
+  return wrapResponse(
+    {
+      network: multiversx.chain,
+      gasPrice,
+      gasPriceToken: multiversx.nativeTokenSymbol,
+      gasLimit: xexchangeGasLimit,
+      gasCost: gasCostInEthString(gasPrice, xexchangeGasLimit),
+    },
+    initTime,
+  );
 }

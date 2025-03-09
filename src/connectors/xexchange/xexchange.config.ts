@@ -1,5 +1,5 @@
 import { ConfigManagerV2 } from '../../services/config-manager-v2';
-import { AvailableNetworks } from '../../services/config-manager-types';
+import { AvailableNetworks } from '../connector.requests';
 export namespace XExchangeConfig {
   export interface NetworkConfig {
     allowedSlippage: string;
@@ -17,10 +17,10 @@ export namespace XExchangeConfig {
 
   export const config: NetworkConfig = {
     allowedSlippage: ConfigManagerV2.getInstance().get(
-      `xexchange.allowedSlippage`
+      `xexchange.allowedSlippage`,
     ),
     gasLimitEstimate: ConfigManagerV2.getInstance().get(
-      `xexchange.gasLimitEstimate`
+      `xexchange.gasLimitEstimate`,
     ),
     maximumHops: ConfigManagerV2.getInstance().get(`xexchange.maximumHops`),
     tradingTypes: (type: string) => {
@@ -30,17 +30,17 @@ export namespace XExchangeConfig {
     pairAbi: ConfigManagerV2.getInstance().get(`xexchange.pairAbi`),
     routerAddress: (network: string) =>
       ConfigManagerV2.getInstance().get(
-        `xexchange.contractAddresses.${network}.routerAddress`
+        `xexchange.contractAddresses.${network}.routerAddress`,
       ),
     availableNetworks: [
       {
         chain: 'multiversx',
         networks: Object.keys(
-          ConfigManagerV2.getInstance().get('xexchange.contractAddresses')
+          ConfigManagerV2.getInstance().get('xexchange.contractAddresses'),
         ).filter((network) =>
           Object.keys(
-            ConfigManagerV2.getInstance().get('multiversx.networks')
-          ).includes(network)
+            ConfigManagerV2.getInstance().get('multiversx.networks'),
+          ).includes(network),
         ),
       },
     ],
