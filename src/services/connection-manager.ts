@@ -3,6 +3,7 @@ import { Solana } from '../chains/solana/solana';
 import { Uniswap } from '../connectors/uniswap/uniswap';
 import { Jupiter } from '../connectors/jupiter/jupiter';
 import { Meteora } from '../connectors/meteora/meteora';
+import { Multiversx } from '../chains/multiversx/multiversx';
 
 export interface Chain {
   // TODO: Add shared chain properties (e.g., network, chainId, etc.)
@@ -48,6 +49,8 @@ export async function getChainInstance(
     connection = Ethereum.getInstance(network);
   } else if (chain === 'solana') {
     connection = await Solana.getInstance(network);
+  } else if (chain === 'multiversx') {
+    connection = await Multiversx.getInstance(network);
   } else {
     connection = undefined;
   }

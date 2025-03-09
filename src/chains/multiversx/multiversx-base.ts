@@ -54,7 +54,7 @@ export class MultiversxBase {
     tokenListType: TokenListType,
     gasPriceConstant: number,
     gasLimitTransaction: number,
-    transactionDbPath: string
+    transactionDbPath: string,
   ) {
     this._provider = new ProxyNetworkProvider(rpcUrl);
     this.chainName = chainName;
@@ -70,7 +70,7 @@ export class MultiversxBase {
     this._gasLimitTransaction = gasLimitTransaction;
     this._txStorage = EvmTxStorage.getInstance(
       this.resolveDBPath(transactionDbPath),
-      this._refCountingHandle
+      this._refCountingHandle,
     );
     this._txStorage.declareOwnership(this._refCountingHandle);
   }
@@ -114,16 +114,16 @@ export class MultiversxBase {
 
   async loadTokens(
     tokenListSource: string,
-    tokenListType: TokenListType
+    tokenListType: TokenListType,
   ): Promise<void> {
     this.tokenList = await this.getTokenList(tokenListSource, tokenListType);
     // Only keep tokens in the same chain
     this.tokenList = this.tokenList.filter(
-      (token: TokenInfo) => token.chainId === this.chainId
+      (token: TokenInfo) => token.chainId === this.chainId,
     );
     if (this.tokenList) {
       this.tokenList.forEach(
-        (token: TokenInfo) => (this._tokenMap[token.symbol] = token)
+        (token: TokenInfo) => (this._tokenMap[token.symbol] = token),
       );
     }
   }
@@ -131,7 +131,7 @@ export class MultiversxBase {
   // returns a Tokens for a given list source and list type
   async getTokenList(
     tokenListSource: string,
-    tokenListType: TokenListType
+    tokenListType: TokenListType,
   ): Promise<TokenInfo[]> {
     let tokens: TokenInfo[];
     if (tokenListType === 'URL') {
@@ -173,7 +173,7 @@ export class MultiversxBase {
 
     const encryptedPrivateKey: string = await fse.readFile(
       `${path}/${address}.json`,
-      'utf8'
+      'utf8',
     );
 
     const passphrase = ConfigManagerCertPassphrase.readPassphrase();
@@ -189,7 +189,7 @@ export class MultiversxBase {
 
     const secretKey = UserSecretKey.fromString(privateKey);
     const publicKey = secretKey.generatePublicKey();
-    const data = Buffer.concat([secretKey.valueOf(), publicKey.valueOf()]);
+    const data = publicKey.valueOf();
     const encryptedData = Encryptor.encrypt(data, password, randomness);
 
     return encryptedData.ciphertext;
@@ -216,7 +216,7 @@ export class MultiversxBase {
   async getESDTBalance(
     tokenSymbol: string,
     wallet: Account,
-    decimals: number
+    decimals: number,
   ): Promise<TokenValue> {
     logger.info('Requesting balance for owner ' + wallet.address + '.');
     const token = this.getTokenBySymbol(tokenSymbol);
@@ -226,11 +226,11 @@ export class MultiversxBase {
 
     const result = await this._provider.getFungibleTokenOfAccount(
       wallet.address,
-      token?.identifier
+      token?.identifier,
     );
     logger.info(
       `Raw balance of ${tokenSymbol} for ` +
-        `${wallet.address}: ${result.balance.toFixed()}`
+        `${wallet.address}: ${result.balance.toFixed()}`,
     );
     return {
       value: BigNumber.from(result.balance.toFixed()),
@@ -250,7 +250,7 @@ export class MultiversxBase {
 
   // returns an ethereum TransactionReceipt for a txHash if the transaction has been mined.
   async getTransactionReceipt(
-    txHash: string
+    txHash: string,
   ): Promise<TransactionOnNetwork | null> {
     if (this.cache.keys().includes(txHash)) {
       // If it's in the cache, return the value in cache, whether it's null or not
@@ -269,7 +269,7 @@ export class MultiversxBase {
     return this.tokenList.find(
       (token: TokenInfo) =>
         token.symbol.toUpperCase() === tokenSymbol.toUpperCase() &&
-        token.chainId === this.chainId
+        token.chainId === this.chainId,
     );
   }
 

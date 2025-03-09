@@ -21,7 +21,7 @@ export class Multiversx extends MultiversxBase {
       config.network.tokenListType,
       1000000000,
       config.gasLimitTransaction,
-      ConfigManagerV2.getInstance().get('server.transactionDbPath')
+      ConfigManagerV2.getInstance().get('server.transactionDbPath'),
     );
     this._chain = config.network.name;
     this._nativeTokenSymbol = config.nativeCurrencySymbol;
@@ -30,12 +30,14 @@ export class Multiversx extends MultiversxBase {
     this.controller = MultiversxController;
   }
 
-  public static getInstance(network: string): Multiversx {
+  public static async getInstance(network: string): Promise<Multiversx> {
     if (Multiversx._instances === undefined) {
       Multiversx._instances = {};
     }
     if (!(network in Multiversx._instances)) {
-      Multiversx._instances[network] = new Multiversx(network);
+      const instance = new Multiversx(network);
+      await instance.init();
+      Multiversx._instances[network] = instance;
     }
 
     return Multiversx._instances[network];

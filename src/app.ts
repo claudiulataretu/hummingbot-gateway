@@ -24,6 +24,7 @@ import { jupiterRoutes } from './connectors/jupiter/jupiter.routes';
 import { meteoraRoutes } from './connectors/meteora/meteora.routes';
 import { uniswapRoutes } from './connectors/uniswap/uniswap.routes';
 import { raydiumRoutes } from './connectors/raydium/raydium.routes';
+import multiversxRoutes from './chains/multiversx/multiversx.routes';
 
 
 // Change version for each release
@@ -164,6 +165,7 @@ const configureGatewayServer = () => {
     app.register(uniswapRoutes, { prefix: '/uniswap' });
     app.register(solanaRoutes, { prefix: '/solana' });
     app.register(ethereumRoutes, { prefix: '/ethereum' });
+    app.register(multiversxRoutes, { prefix: '/multiversx' });
   };
 
   // Register routes on main server
