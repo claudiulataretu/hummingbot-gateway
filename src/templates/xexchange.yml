@@ -7,7 +7,7 @@ gasLimitEstimate: 25000000
 
 # how long a trade is valid in seconds. After time passes uniswap will not
 # perform the trade, but the gas will still be sent.
-ttl: 600
+ttl: 300
 
 # For each swap, the maximum number of hops to consider. 
 # Note: More hops will increase latency of the algorithm.
@@ -17,7 +17,6 @@ maximumHops: 1
 # true - use Smart Order Router
 # false - use QuoterV2 Contract
 useRouter: false
-ttl: 300
 
 routerAbi: 'src/connectors/xexchange/router.abi.json'
 pairAbi: 'src/connectors/xexchange/pair.abi.json'

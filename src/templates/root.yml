@@ -31,3 +31,7 @@ configurations:
   $namespace multiversx:
     configurationPath: multiversx.yml
     schemaPath: multiversx-schema.json
+
+  $namespace xexchange:
+    configurationPath: xexchange.yml
+    schemaPath: xexchange-schema.json
