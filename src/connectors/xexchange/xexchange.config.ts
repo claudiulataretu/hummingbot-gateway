@@ -8,7 +8,7 @@ export namespace XExchangeConfig {
     routerAbi: string;
     pairAbi: string;
     routerAddress: (network: string) => string;
-    tradingTypes: (type: string) => Array<string>;
+    tradingTypes: Array<string>;
     availableNetworks: Array<AvailableNetworks>;
     useRouter?: boolean;
     ttl: number;
@@ -23,9 +23,7 @@ export namespace XExchangeConfig {
       `xexchange.gasLimitEstimate`,
     ),
     maximumHops: ConfigManagerV2.getInstance().get(`xexchange.maximumHops`),
-    tradingTypes: (type: string) => {
-      return type === 'swap' ? ['AMM'] : ['AMM_LP'];
-    },
+    tradingTypes: ['AMM'],
     routerAbi: ConfigManagerV2.getInstance().get(`xexchange.routerAbi`),
     pairAbi: ConfigManagerV2.getInstance().get(`xexchange.pairAbi`),
     routerAddress: (network: string) =>

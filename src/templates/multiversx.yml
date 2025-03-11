@@ -4,7 +4,7 @@ networks:
     nodeURL: https://gateway.multiversx.com
     tokenListType: FILE
     nativeCurrencySymbol: EGLD
-    tokenListSource: /home/gateway/conf/lists/multiversx_tokens.json
+    tokenListSource: /home/gateway/conf/lists/multiversx_mainnet_tokens.json
   testnet:
     chainID: T
     nodeURL: https://testnet-gateway.multiversx.com
