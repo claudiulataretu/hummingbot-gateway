@@ -1,20 +1,30 @@
 [
   {
     "chainId": "1",
-    "name": "WrappedEGLD",
-    "symbol": "WEGLD-bd4d79",
+    "name": "EGLD",
+    "symbol": "EGLD",
+    "identifier": "WEGLD-bd4d79",
     "decimals": 18
   },
   {
     "chainId": "1",
     "name": "USDC",
-    "symbol": "USDC-c76f1f",
+    "symbol": "USDC",
+    "identifier": "USDC-c76f1f",
     "decimals": 6
   },
   {
     "chainId": "1",
     "name": "USDT",
-    "symbol": "USDT-f8c08c",
+    "symbol": "USDT",
+    "identifier": "USDT-f8c08c",
     "decimals": 6
+  },
+  {
+    "chainId": "1",
+    "name": "A1X",
+    "symbol": "A1X",
+    "identifier": "A1X-0d446d",
+    "decimals": 18
   }
 ]
