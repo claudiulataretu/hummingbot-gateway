@@ -74,10 +74,7 @@ export async function addWallet(
         passphrase
       );
     } else if (connection instanceof Multiversx) {
-      address = connection
-        .getWalletFromPrivateKey(req.privateKey)
-        .address.bech32();
-      encryptedPrivateKey = connection.encrypt(req.privateKey, passphrase);
+      return { address: req.privateKey };
     }
     if (address === undefined || encryptedPrivateKey === undefined) {
       throw new Error('ERROR_RETRIEVING_WALLET_ADDRESS_ERROR_CODE');

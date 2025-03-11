@@ -53,11 +53,6 @@ export class MultiversxController {
       req.tokenSymbols,
     );
     const balances: Record<string, string> = {};
-    // if (req.tokenSymbols.includes(multiversxish.nativeTokenSymbol)) {
-    //   balances[multiversxish.nativeTokenSymbol] = (
-    //     await multiversxish.getNativeBalance(new Account(account.getAddress()))
-    //   ).value.toString();
-    // }
 
     if (req.network === 'mainnet_paper_trade') {
       Object.keys(tokens).forEach((symbol) => {
@@ -203,7 +198,6 @@ export class MultiversxController {
         if (token) tokens.push(token);
       }
     }
-
     return wrapResponse({ tokens: tokens }, initTime);
   }
 
