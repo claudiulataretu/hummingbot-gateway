@@ -23,6 +23,7 @@ import {
 } from '../services/error-handler';
 import { Solana } from '../chains/solana/solana';
 import { EthereumBase } from '../chains/ethereum/ethereum-base';
+import { Multiversx } from '../chains/multiversx/multiversx';
 
 const walletPath = './conf/wallets';
 
@@ -72,6 +73,11 @@ export async function addWallet(
         req.privateKey,
         passphrase
       );
+    } else if (connection instanceof Multiversx) {
+      address = connection
+        .getWalletFromPrivateKey(req.privateKey)
+        .address.bech32();
+      encryptedPrivateKey = connection.encrypt(req.privateKey, passphrase);
     }
     if (address === undefined || encryptedPrivateKey === undefined) {
       throw new Error('ERROR_RETRIEVING_WALLET_ADDRESS_ERROR_CODE');

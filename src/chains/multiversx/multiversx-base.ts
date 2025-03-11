@@ -162,8 +162,14 @@ export class MultiversxBase {
   }
 
   getWalletFromPrivateKey(privateKey: string): Account {
-    const userSigner = UserSigner.fromPem(privateKey);
-    return new Account(userSigner.getAddress());
+    const yourBufferOne = Buffer.from(privateKey, 'base64');
+    const yourBufferTwo = Buffer.from(yourBufferOne.toString(), 'hex');
+    const secretKey = new UserSecretKey(
+      Uint8Array.from(yourBufferTwo.slice(0, 32)),
+    );
+    const signer = new UserSigner(secretKey);
+    const account = new Account(signer.getAddress());
+    return account;
   }
 
   // returns Wallet for an address
@@ -187,7 +193,11 @@ export class MultiversxBase {
   encrypt(privateKey: string, password: string): string {
     const randomness = new Randomness();
 
-    const secretKey = UserSecretKey.fromString(privateKey);
+    const yourBufferOne = Buffer.from(privateKey, 'base64');
+    const yourBufferTwo = Buffer.from(yourBufferOne.toString(), 'hex');
+    const secretKey = new UserSecretKey(
+      Uint8Array.from(yourBufferTwo.slice(0, 32)),
+    );
     const publicKey = secretKey.generatePublicKey();
     const data = publicKey.valueOf();
     const encryptedData = Encryptor.encrypt(data, password, randomness);
