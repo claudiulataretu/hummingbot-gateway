@@ -228,7 +228,7 @@ export async function trade(
     console.log(tx.getData().toString());
     const signature = await account.sign(tx.serializeForSigning());
     tx.applySignature(new Uint8Array(signature));
-    // const txHash = await multiversx.provider.sendTransaction(tx);
+    const txHash = await multiversx.provider.sendTransaction(tx);
 
     logger.info(`Buy xExchange swap has been executed.`);
 
@@ -246,7 +246,7 @@ export async function trade(
       gasPriceToken: multiversx.nativeTokenSymbol,
       gasLimit: gasLimitTransaction,
       gasCost: String((gasPrice * gasLimitEstimate) / 1e24),
-      txHash: '',
+      txHash: txHash,
     };
   } else {
     if (limitPrice && new Decimal(estimatedPrice).lt(new Decimal(limitPrice))) {
@@ -269,7 +269,7 @@ export async function trade(
     console.log(tx.getData().toString());
     const signature = await account.sign(tx.serializeForSigning());
     tx.applySignature(new Uint8Array(signature));
-    // const txHash = await multiversx.provider.sendTransaction(tx);
+    const txHash = await multiversx.provider.sendTransaction(tx);
 
     logger.info(`Sell xExchange swap has been executed.`);
 
@@ -287,7 +287,7 @@ export async function trade(
       gasPriceToken: multiversx.nativeTokenSymbol,
       gasLimit: gasLimitTransaction,
       gasCost: String((gasPrice * gasLimitEstimate) / 1e24),
-      txHash: '',
+      txHash: txHash,
     };
   }
 }
