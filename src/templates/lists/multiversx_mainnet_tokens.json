@@ -26,5 +26,12 @@
     "symbol": "A1X",
     "identifier": "A1X-0d446d",
     "decimals": 18
+  },
+  {
+    "chainId": "1",
+    "name": "UTK",
+    "symbol": "UTK",
+    "identifier": "UTK-2f80e9",
+    "decimals": 18
   }
 ]
