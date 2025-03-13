@@ -225,7 +225,7 @@ export async function trade(
       tradeInfo.expectedTrade,
       xexchange.gasLimitEstimate,
     );
-    console.log(tx.getData().toString());
+
     const signature = await account.sign(tx.serializeForSigning());
     tx.applySignature(new Uint8Array(signature));
     const txHash = await multiversx.provider.sendTransaction(tx);
@@ -266,7 +266,7 @@ export async function trade(
       tradeInfo.expectedTrade,
       xexchange.gasLimitEstimate,
     );
-    console.log(tx.getData().toString());
+
     const signature = await account.sign(tx.serializeForSigning());
     tx.applySignature(new Uint8Array(signature));
     const txHash = await multiversx.provider.sendTransaction(tx);

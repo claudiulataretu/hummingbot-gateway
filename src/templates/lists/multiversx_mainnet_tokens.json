@@ -33,5 +33,12 @@
     "symbol": "UTK",
     "identifier": "UTK-2f80e9",
     "decimals": 18
+  },
+  {
+    "chainId": "1",
+    "name": "PELL",
+    "symbol": "PELL",
+    "identifier": "PELL-00610b",
+    "decimals": 18
   }
 ]
