@@ -375,8 +375,7 @@ export class XExchange {
       .withGasLimit(30000000)
       .withChainID(this.chainId)
       .withSender(wallet.getAddress())
-      .withNonce(account.nonce)
-      .withGasPrice(100000000);
+      .withNonce(account.nonce);
     const transaction = interaction.buildTransaction();
 
     return transaction;
