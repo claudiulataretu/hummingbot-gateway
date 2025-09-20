@@ -1,12 +1,12 @@
-import winston from 'winston';
-import DailyRotateFile from 'winston-daily-rotate-file';
+import appRoot from 'app-root-path';
 import dayjs from 'dayjs';
 import utc from 'dayjs/plugin/utc';
-import appRoot from 'app-root-path';
+import { LEVEL, MESSAGE } from 'triple-beam';
+import winston from 'winston';
+import DailyRotateFile from 'winston-daily-rotate-file';
+
 import { ConfigManagerV2 } from './config-manager-v2';
 dayjs.extend(utc);
-
-const { LEVEL, MESSAGE } = require('triple-beam');
 
 const errorsWithStack = winston.format((einfo) => {
   if (einfo instanceof Error) {
@@ -35,44 +35,46 @@ const logFileFormat = winston.format.combine(
   winston.format.printf((info) => {
     const localDate = getLocalDate();
     let output = info.message;
-    
+
     // Handle metadata (additional arguments)
-    if (Object.keys(info).length > 2) {  // more than just 'message' and 'level'
-      const metaData = {...info};
+    if (Object.keys(info).length > 2) {
+      // more than just 'message' and 'level'
+      const metaData = { ...info };
       delete metaData.message;
       delete metaData.level;
       delete metaData.stack;
       delete metaData[LEVEL];
       delete metaData[MESSAGE];
-      
+
       output += ' ' + JSON.stringify(metaData, null, 2);
     }
-    
-    return info.stack 
+
+    return info.stack
       ? `${localDate} | ${info.level} | ${output} | ${info.stack}`
       : `${localDate} | ${info.level} | ${output}`;
-  })
+  }),
 );
 
 const sdtoutFormat = winston.format.combine(
   winston.format.printf((info) => {
     const localDate = getLocalDate();
     let output = info.message;
-    
+
     // Handle metadata (additional arguments)
-    if (Object.keys(info).length > 2) {  // more than just 'message' and 'level'
-      const metaData = {...info};
+    if (Object.keys(info).length > 2) {
+      // more than just 'message' and 'level'
+      const metaData = { ...info };
       delete metaData.message;
       delete metaData.level;
       delete metaData.stack;
       delete metaData[LEVEL];
       delete metaData[MESSAGE];
-      
+
       output += ' ' + JSON.stringify(metaData, null, 2);
     }
-    
+
     return `${localDate} | ${info.level} | ${output}`;
-  })
+  }),
 );
 
 const getLogPath = () => {
@@ -81,7 +83,7 @@ const getLogPath = () => {
 };
 
 const allLogsFileTransport = new DailyRotateFile({
-  level: 'info',
+  level: ConfigManagerV2.getInstance().get('server.logLevel') || 'info',
   filename: `${getLogPath()}/logs_gateway_app.log.%DATE%`,
   datePattern: 'YYYY-MM-DD',
   handleExceptions: true,
@@ -89,20 +91,20 @@ const allLogsFileTransport = new DailyRotateFile({
 });
 
 export const logger = winston.createLogger({
-  level: 'info',
+  level: ConfigManagerV2.getInstance().get('server.logLevel') || 'info',
   format: logFileFormat,
   exitOnError: false,
   transports: [allLogsFileTransport],
 });
 
 const toStdout = new winston.transports.Console({
+  level: ConfigManagerV2.getInstance().get('server.logLevel') || 'info',
   format: sdtoutFormat,
 });
 
 export const updateLoggerToStdout = () => {
-  ConfigManagerV2.getInstance().get('server.logToStdOut') === true
-    ? logger.add(toStdout)
-    : logger.remove(toStdout);
+  ConfigManagerV2.getInstance().get('server.logToStdOut') === true ? logger.add(toStdout) : logger.remove(toStdout);
 };
 
+// Initialize logger with stdout configuration
 updateLoggerToStdout();

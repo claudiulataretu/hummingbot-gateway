@@ -1,32 +1,27 @@
-import type { FastifyPluginAsync } from 'fastify';
 import sensible from '@fastify/sensible';
+import type { FastifyPluginAsync } from 'fastify';
 
-import { fetchPoolsRoute } from './routes/fetchPools';
-import { poolInfoRoute } from './routes/poolInfo';
-import { positionsOwnedRoute } from './routes/positionsOwned';
-import { quoteSwapRoute } from './routes/quoteSwap';
-import { positionInfoRoute } from './routes/positionInfo';
-import { executeSwapRoute } from './routes/executeSwap';
-import { openPositionRoute } from './routes/openPosition';
-import { addLiquidityRoute } from './routes/addLiquidity';
-import { removeLiquidityRoute } from './routes/removeLiquidity';
-import { collectFeesRoute } from './routes/collectFees';
-import { closePositionRoute } from './routes/closePosition';
+// Import routes
+import { meteoraClmmRoutes } from './clmm-routes';
 
-export const meteoraRoutes: FastifyPluginAsync = async (fastify) => {
+// CLMM routes including swap endpoints
+const meteoraClmmRoutesWrapper: FastifyPluginAsync = async (fastify) => {
   await fastify.register(sensible);
-  
-  await fastify.register(fetchPoolsRoute);
-  await fastify.register(poolInfoRoute);
-  await fastify.register(positionsOwnedRoute);
-  await fastify.register(positionInfoRoute);
-  await fastify.register(quoteSwapRoute);
-  await fastify.register(executeSwapRoute);
-  await fastify.register(openPositionRoute);
-  await fastify.register(addLiquidityRoute);
-  await fastify.register(removeLiquidityRoute);
-  await fastify.register(collectFeesRoute);
-  await fastify.register(closePositionRoute);
+
+  await fastify.register(async (instance) => {
+    instance.addHook('onRoute', (routeOptions) => {
+      if (routeOptions.schema && routeOptions.schema.tags) {
+        routeOptions.schema.tags = ['/connector/meteora'];
+      }
+    });
+
+    await instance.register(meteoraClmmRoutes);
+  });
 };
 
-export default meteoraRoutes; 
+// Export the CLMM routes
+export const meteoraRoutes = {
+  clmm: meteoraClmmRoutesWrapper,
+};
+
+export default meteoraRoutes;

@@ -1,17 +1,12 @@
 {
   "compilerOptions": {
     "strict": false,
-    // "types": ["jest", "node"],
     "target": "ESNext",
     "module": "CommonJS",
     "allowJs": true,
-    // "lib": ["es6", "es2020", "esnext.asynciterable", "dom"],
-    // "sourceMap": true,
-    "outDir": "./dist",
-    // "moduleResolution": "node",
+    "inlineSourceMap": true,
     "removeComments": true,
     "noImplicitAny": false,
-    // "strictNullChecks": false,
     "strictFunctionTypes": true,
     "noImplicitThis": true,
     "noUnusedLocals": false,
@@ -23,17 +18,17 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "resolveJsonModule": true,
+    "baseUrl": ".",
+    "paths": {
+      "#src": ["src/index.ts"],
+      "#src/*": ["src/*"],
+      "#test": ["test"],
+      "#test/*": ["test/*"]
+    },
     "typeRoots": ["node_modules/@types", "src/@types"],
     "downlevelIteration": true,
     "skipLibCheck": true
   },
-  "exclude": [
-    "node_modules",
-    // ... any other existing excludes ...
-  ],
-  "include": [
-    "src/**/*.ts",
-    "src/**/*.js",
-    "test/**/*.ts",
-  ]
+  "exclude": ["node_modules", "dist", "coverage"],
+  "include": ["src/**/*.ts", "test/**/*.ts", "test-scripts/**/*.ts"]
 }

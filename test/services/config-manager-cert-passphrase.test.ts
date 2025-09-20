@@ -1,5 +1,23 @@
-import { patch, unpatch } from './patch';
+// Only mock the dependencies that ConfigManagerCertPassphrase needs
+jest.mock('../../src/services/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  },
+}));
+
+// Import shared mock for ConfigManagerV2 only
+import { mockConfigManagerV2 } from '../mocks/shared-mocks';
+
+jest.mock('../../src/services/config-manager-v2', () => ({
+  ConfigManagerV2: mockConfigManagerV2,
+}));
+
 import { ConfigManagerCertPassphrase } from '../../src/services/config-manager-cert-passphrase';
+
+import { patch, unpatch } from './patch';
 import 'jest-extended';
 
 describe('ConfigManagerCertPassphrase.readPassphrase', () => {
@@ -20,10 +38,10 @@ describe('ConfigManagerCertPassphrase.readPassphrase', () => {
     // Clear any existing passphrase from environment variables
     const originalPassphrase = process.env['GATEWAY_PASSPHRASE'];
     delete process.env['GATEWAY_PASSPHRASE'];
-    
+
     ConfigManagerCertPassphrase.readPassphrase();
     expect(witnessFailure).toEqual(true);
-    
+
     // Restore the original passphrase if it existed
     if (originalPassphrase !== undefined) {
       process.env['GATEWAY_PASSPHRASE'] = originalPassphrase;

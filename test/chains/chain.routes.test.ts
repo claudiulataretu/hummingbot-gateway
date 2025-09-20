@@ -1,130 +1,55 @@
+import { FastifyInstance } from 'fastify';
+
+// Import shared mocks before importing app
+import '../mocks/app-mocks';
+
 import { gatewayApp } from '../../src/app';
-import { Ethereum } from '../../src/chains/ethereum/ethereum';
-import { patchEVMNonceManager } from '../evm.nonce.mock';
-import { patch, unpatch } from '../services/patch';
-let eth: Ethereum;
 
-beforeAll(async () => {
-  eth = Ethereum.getInstance('sepolia');
-  patchEVMNonceManager(eth.nonceManager);
-  await eth.init();
-});
+describe('Chain Routes', () => {
+  let fastify: FastifyInstance;
 
-beforeEach(() => {
-  patchEVMNonceManager(eth.nonceManager);
-});
-
-afterEach(async () => {
-  unpatch();
-});
-
-afterAll(async () => {
-  await eth.close();
-});
-
-describe('GET /ethereum/status', () => {
-  it('should return 200 when asking for sepolia network status', async () => {
-    patch(eth, 'network', () => {
-      return 'sepolia';
-    });
-    patch(eth, 'rpcUrl', 'http://...');
-    patch(eth, 'chainId', 11155111);
-    patch(eth, 'getCurrentBlockNumber', () => {
-      return 1;
-    });
-
-    const response = await gatewayApp.inject({
-      method: 'GET',
-      url: '/ethereum/status',
-      query: {
-        network: 'sepolia',
-      }
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(response.headers['content-type']).toMatch(/json/);
-    const body = JSON.parse(response.payload);
-    expect(body.network).toBe('sepolia');
-    expect(body.chainId).toBeDefined();
-    expect(body.rpcUrl).toBeDefined();
-    expect(body.currentBlockNumber).toBeDefined();
+  beforeAll(async () => {
+    fastify = gatewayApp;
   });
 
-  it('should return a 400 error when requesting status without specifying a network', async () => {
-    patch(eth, 'getCurrentBlockNumber', () => {
-      return 212;
-    });
-
-    const response = await gatewayApp.inject({
-      method: 'GET',
-      url: '/ethereum/status'
-    });
-
-    expect(response.statusCode).toBe(400);
+  afterAll(async () => {
+    await fastify.close();
   });
 
-  it('should return a 500 error when asking for an invalid network', async () => {
-    const response = await gatewayApp.inject({
-      method: 'GET',
-      url: '/ethereum/status',
-      query: {
-        network: 'invalid'
-      }
+  describe('GET /chains', () => {
+    it('should return the list of supported chains and networks', async () => {
+      const response = await fastify.inject({
+        method: 'GET',
+        url: '/config/chains',
+      });
+
+      expect(response.statusCode).toBe(200);
+      const data = JSON.parse(response.body);
+
+      expect(data).toHaveProperty('chains');
+      expect(Array.isArray(data.chains)).toBe(true);
+
+      // Check that we have both ethereum and solana chains
+      const chainNames = data.chains.map((c: any) => c.chain);
+      expect(chainNames).toContain('ethereum');
+      expect(chainNames).toContain('solana');
+
+      // Each chain should have networks array
+      data.chains.forEach((chain: any) => {
+        expect(chain).toHaveProperty('chain');
+        expect(chain).toHaveProperty('networks');
+        expect(Array.isArray(chain.networks)).toBe(true);
+      });
+
+      // Verify ethereum networks
+      const ethereum = data.chains.find((c: any) => c.chain === 'ethereum');
+      expect(ethereum.networks.length).toBeGreaterThan(0);
+      expect(ethereum.networks).toContain('mainnet');
+
+      // Verify solana networks
+      const solana = data.chains.find((c: any) => c.chain === 'solana');
+      expect(solana.networks.length).toBeGreaterThan(0);
+      expect(solana.networks).toContain('mainnet-beta');
     });
-
-    expect(response.statusCode).toBe(500);
   });
-});
-
-describe('GET /config', () => {
-  it('should return 200 when asking for config', async () => {
-    const response = await gatewayApp.inject({
-      method: 'GET',
-      url: '/config'
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(response.headers['content-type']).toMatch(/json/);
-  });
-
-  it('should return 200 when asking for chain specific config', async () => {
-    const response = await gatewayApp.inject({
-      method: 'GET',
-      url: '/config',
-      query: { chain: 'ethereum' }
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(response.headers['content-type']).toMatch(/json/);
-  });
-});
-
-describe('GET /ethereum/tokens', () => {
-  it('should return 200 when retrieving ethereum-sepolia tokens, tokenSymbols parameter not provided', async () => {
-    const response = await gatewayApp.inject({
-      method: 'GET',
-      url: '/ethereum/tokens',
-      query: {
-        network: 'sepolia',
-      }
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(response.headers['content-type']).toMatch(/json/);
-  });
-
-  it('should return 200 when retrieving ethereum-sepolia tokens, tokenSymbols parameter provided', async () => {
-    const response = await gatewayApp.inject({
-      method: 'GET',
-      url: '/ethereum/tokens',
-      query: {
-        network: 'sepolia',
-        tokenSymbols: ['WETH', 'DAI'],
-      }
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(response.headers['content-type']).toMatch(/json/);
-  });
-
 });

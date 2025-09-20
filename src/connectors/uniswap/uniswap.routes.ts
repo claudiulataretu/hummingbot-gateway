@@ -1,95 +1,61 @@
+import sensible from '@fastify/sensible';
 import { FastifyPluginAsync } from 'fastify';
-import { Ethereum } from '../../chains/ethereum/ethereum';
-import { Uniswap } from './uniswap';
-import { price, trade, estimateGas } from './uniswap.controllers';
-import {
-  PriceRequest,
-  PriceResponse,
-  TradeRequest,
-  TradeResponse,
-  EstimateGasResponse,
-  PriceRequestSchema,
-  PriceResponseSchema,
-  TradeRequestSchema,
-  TradeResponseSchema,
-  EstimateGasResponseSchema
-} from '../connector.requests';
-import {
-  validateEstimateGasRequest,
-  validatePriceRequest,
-  validateTradeRequest,
-} from '../connector.validators';
-import { NetworkSelectionSchema, NetworkSelectionRequest } from '../../services/common-interfaces';
 
-export const uniswapRoutes: FastifyPluginAsync = async (fastify) => {
-  // POST /uniswap/price
-  fastify.post<{ Body: PriceRequest; Reply: PriceResponse }>(
-    '/price',
-    {
-      schema: {
-        description: 'Get Uniswap price quote',
-        tags: ['uniswap'],
-        body: PriceRequestSchema,
-        response: {
-          200: PriceResponseSchema
-        }
-      }
-    },
-    async (request) => {
-      validatePriceRequest(request.body);
-      const ethereum = Ethereum.getInstance(request.body.network);
-      const uniswapish = Uniswap.getInstance(request.body.chain, request.body.network);
-      return await price(ethereum, uniswapish, request.body);
-    }
-  );
+// Import routes
+import { uniswapAmmRoutes } from './amm-routes';
+import { uniswapClmmRoutes } from './clmm-routes';
+import { uniswapRouterRoutes } from './router-routes';
 
-  // POST /uniswap/trade
-  fastify.post<{ Body: TradeRequest; Reply: TradeResponse }>(
-    '/trade',
-    {
-      schema: {
-        description: 'Execute Uniswap trade',
-        tags: ['uniswap'],
-        body: TradeRequestSchema,
-        response: {
-          200: TradeResponseSchema
-        }
-      }
-    },
-    async (request) => {
-      validateTradeRequest(request.body);
-      const ethereum = Ethereum.getInstance(request.body.network);
-      const uniswapish = Uniswap.getInstance(request.body.chain, request.body.network);
-      console.log('Trade request payload:', request.body);
-      try {
-        return await trade(ethereum, uniswapish, request.body);
-      } catch (error) {
-        console.error('Uniswap trade error:', error);
-        throw error;
-      }
-    }
-  );
+// Router routes (Universal Router with 4 endpoints)
+const uniswapRouterRoutesWrapper: FastifyPluginAsync = async (fastify) => {
+  await fastify.register(sensible);
 
-  // POST /uniswap/estimateGas
-  fastify.post<{ Body: NetworkSelectionRequest; Reply: EstimateGasResponse }>(
-    '/estimateGas',
-    {
-      schema: {
-        description: 'Estimate Uniswap gas',
-        tags: ['uniswap'],
-        body: NetworkSelectionSchema,
-        response: {
-          200: EstimateGasResponseSchema
-        }
+  await fastify.register(async (instance) => {
+    instance.addHook('onRoute', (routeOptions) => {
+      if (routeOptions.schema && routeOptions.schema.tags) {
+        routeOptions.schema.tags = ['/connector/uniswap'];
       }
-    },
-    async (request) => {
-      validateEstimateGasRequest(request.body);
-      const ethereum = Ethereum.getInstance(request.body.network);
-      const uniswapish = Uniswap.getInstance(request.body.chain, request.body.network);
-      return await estimateGas(ethereum, uniswapish);
-    }
-  );
+    });
+
+    await instance.register(uniswapRouterRoutes);
+  });
+};
+
+// AMM routes (Uniswap V2)
+const uniswapAmmRoutesWrapper: FastifyPluginAsync = async (fastify) => {
+  await fastify.register(sensible);
+
+  await fastify.register(async (instance) => {
+    instance.addHook('onRoute', (routeOptions) => {
+      if (routeOptions.schema && routeOptions.schema.tags) {
+        routeOptions.schema.tags = ['/connector/uniswap'];
+      }
+    });
+
+    await instance.register(uniswapAmmRoutes);
+  });
+};
+
+// CLMM routes (Uniswap V3)
+const uniswapClmmRoutesWrapper: FastifyPluginAsync = async (fastify) => {
+  await fastify.register(sensible);
+
+  await fastify.register(async (instance) => {
+    instance.addHook('onRoute', (routeOptions) => {
+      if (routeOptions.schema && routeOptions.schema.tags) {
+        routeOptions.schema.tags = ['/connector/uniswap'];
+      }
+    });
+
+    await instance.register(uniswapClmmRoutes);
+  });
+};
+
+// Export routes in the same pattern as other connectors
+export const uniswapRoutes = {
+  router: uniswapRouterRoutesWrapper,
+  amm: uniswapAmmRoutesWrapper,
+  clmm: uniswapClmmRoutesWrapper,
 };
 
 export default uniswapRoutes;

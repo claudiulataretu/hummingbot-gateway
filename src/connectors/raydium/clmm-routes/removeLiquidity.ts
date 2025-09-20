@@ -1,144 +1,151 @@
-import { FastifyPluginAsync, FastifyInstance } from 'fastify'
-import { Raydium } from '../raydium'
-import { Solana, BASE_FEE } from '../../../chains/solana/solana'
-import { logger } from '../../../services/logger'
-import { 
-  RemoveLiquidityRequest,
+import { TxVersion } from '@raydium-io/raydium-sdk-v2';
+import { Static } from '@sinclair/typebox';
+import { VersionedTransaction } from '@solana/web3.js';
+import BN from 'bn.js';
+import Decimal from 'decimal.js';
+import { FastifyPluginAsync, FastifyInstance } from 'fastify';
+
+import { Solana } from '../../../chains/solana/solana';
+import {
   RemoveLiquidityResponse,
   RemoveLiquidityRequestType,
   RemoveLiquidityResponseType,
-} from '../../../services/clmm-interfaces'
-import { TxVersion } from '@raydium-io/raydium-sdk-v2'
-import BN from 'bn.js'
-import Decimal from 'decimal.js'
-
+} from '../../../schemas/clmm-schema';
+import { logger } from '../../../services/logger';
+import { Raydium } from '../raydium';
+import { RaydiumClmmRemoveLiquidityRequest } from '../schemas';
 
 export async function removeLiquidity(
-_fastify: FastifyInstance,
-network: string,
-walletAddress: string,
-positionAddress: string,
-percentageToRemove: number,
-closePosition: boolean = false
+  _fastify: FastifyInstance,
+  network: string,
+  walletAddress: string,
+  positionAddress: string,
+  percentageToRemove: number,
+  closePosition: boolean = false,
 ): Promise<RemoveLiquidityResponseType> {
-  const solana = await Solana.getInstance(network)
-  const raydium = await Raydium.getInstance(network)
-  const wallet = await solana.getWallet(walletAddress)
+  const solana = await Solana.getInstance(network);
+  const raydium = await Raydium.getInstance(network);
 
-  const positionInfo = await raydium.getClmmPosition(positionAddress)
-  const [poolInfo, poolKeys] = await raydium.getClmmPoolfromAPI(positionInfo.poolId.toBase58())
+  // Prepare wallet and check if it's hardware
+  const { wallet, isHardwareWallet } = await raydium.prepareWallet(walletAddress);
+
+  const positionInfo = await raydium.getClmmPosition(positionAddress);
+  const [poolInfo, poolKeys] = await raydium.getClmmPoolfromAPI(positionInfo.poolId.toBase58());
 
   if (positionInfo.liquidity.isZero()) {
-    throw new Error('Position has zero liquidity - nothing to remove')
+    throw new Error('Position has zero liquidity - nothing to remove');
   }
   if (percentageToRemove <= 0 || percentageToRemove > 100) {
-    throw new Error('Invalid percentageToRemove - must be between 0 and 100')
+    throw new Error('Invalid percentageToRemove - must be between 0 and 100');
   }
 
   const liquidityToRemove = new BN(
-    new Decimal(positionInfo.liquidity.toString())
-      .mul(percentageToRemove / 100)
-      .toFixed(0)
-  )
+    new Decimal(positionInfo.liquidity.toString()).mul(percentageToRemove / 100).toFixed(0),
+  );
 
-  logger.info(`Removing ${percentageToRemove.toFixed(4)}% liquidity from position ${positionAddress}`)
-  const COMPUTE_UNITS = 600000
-  let currentPriorityFee = (await solana.getGasPrice() * 1e9) - BASE_FEE
-  while (currentPriorityFee <= solana.config.maxPriorityFee * 1e9) {
-    const priorityFeePerCU = Math.floor(currentPriorityFee * 1e6 / COMPUTE_UNITS)
-    const { transaction } = await raydium.raydiumSDK.clmm.decreaseLiquidity({
-      poolInfo,
-      poolKeys,
-      ownerPosition: positionInfo,
-      ownerInfo: { 
-          useSOLBalance: true,
-          closePosition: closePosition
-      },
-      liquidity: liquidityToRemove,
-      amountMinA: new BN(0),
-      amountMinB: new BN(0),
-      txVersion: TxVersion.V0,
-      computeBudgetConfig: {
-        units: COMPUTE_UNITS,
-        microLamports: priorityFeePerCU,
-      },
-    })
+  logger.info(`Removing ${percentageToRemove.toFixed(4)}% liquidity from position ${positionAddress}`);
 
-    transaction.sign([wallet])
-    await solana.simulateTransaction(transaction)
+  // Use hardcoded compute units for remove liquidity
+  const COMPUTE_UNITS = 600000;
 
-    const { confirmed, signature, txData } = await solana.sendAndConfirmRawTransaction(transaction)
-    if (confirmed && txData) {
-      const { baseTokenBalanceChange, quoteTokenBalanceChange } = 
-        await solana.extractPairBalanceChangesAndFee(
-          signature,
-          await solana.getToken(poolInfo.mintA.address),
-          await solana.getToken(poolInfo.mintB.address),
-          wallet.publicKey.toBase58()
-        );
+  // Get priority fee from solana (returns lamports/CU)
+  const priorityFeeInLamports = await solana.estimateGasPrice();
+  // Convert lamports to microLamports (1 lamport = 1,000,000 microLamports)
+  const priorityFeePerCU = Math.floor(priorityFeeInLamports * 1e6);
 
-      logger.info(`Liquidity removed from position ${positionAddress}: ${Math.abs(baseTokenBalanceChange).toFixed(4)} ${poolInfo.mintA.symbol}, ${Math.abs(quoteTokenBalanceChange).toFixed(4)} ${poolInfo.mintB.symbol}`);
+  let { transaction } = await raydium.raydiumSDK.clmm.decreaseLiquidity({
+    poolInfo,
+    poolKeys,
+    ownerPosition: positionInfo,
+    ownerInfo: {
+      useSOLBalance: true,
+      closePosition: closePosition,
+    },
+    liquidity: liquidityToRemove,
+    amountMinA: new BN(0),
+    amountMinB: new BN(0),
+    txVersion: TxVersion.V0,
+    computeBudgetConfig: {
+      units: COMPUTE_UNITS,
+      microLamports: priorityFeePerCU,
+    },
+  });
 
+  // Sign transaction using helper
+  transaction = (await raydium.signTransaction(
+    transaction,
+    walletAddress,
+    isHardwareWallet,
+    wallet,
+  )) as VersionedTransaction;
+  await solana.simulateWithErrorHandling(transaction, _fastify);
 
+  const { confirmed, signature, txData } = await solana.sendAndConfirmRawTransaction(transaction);
 
-      const totalFee = txData.meta.fee
-      return {
-        signature,
+  // Return with status
+  if (confirmed && txData) {
+    // Transaction confirmed, return full data
+    const tokenAInfo = await solana.getToken(poolInfo.mintA.address);
+    const tokenBInfo = await solana.getToken(poolInfo.mintB.address);
+
+    const { balanceChanges } = await solana.extractBalanceChangesAndFee(signature, walletAddress, [
+      tokenAInfo.address,
+      tokenBInfo.address,
+    ]);
+
+    const baseTokenBalanceChange = balanceChanges[0];
+    const quoteTokenBalanceChange = balanceChanges[1];
+
+    logger.info(
+      `Liquidity removed from position ${positionAddress}: ${Math.abs(baseTokenBalanceChange).toFixed(4)} ${poolInfo.mintA.symbol}, ${Math.abs(quoteTokenBalanceChange).toFixed(4)} ${poolInfo.mintB.symbol}`,
+    );
+
+    const totalFee = txData.meta.fee;
+    return {
+      signature,
+      status: 1, // CONFIRMED
+      data: {
         fee: totalFee / 1e9,
-        baseTokenAmountRemoved: 0,
-        quoteTokenAmountRemoved: 0,
-      }
-    }
-    currentPriorityFee = currentPriorityFee * solana.config.priorityFeeMultiplier
-    logger.info(`Increasing max priority fee to ${(currentPriorityFee / 1e9).toFixed(6)} SOL`)
+        baseTokenAmountRemoved: Math.abs(baseTokenBalanceChange),
+        quoteTokenAmountRemoved: Math.abs(quoteTokenBalanceChange),
+      },
+    };
+  } else {
+    // Transaction pending, return for Hummingbot to handle retry
+    return {
+      signature,
+      status: 0, // PENDING
+    };
   }
-  throw new Error(`Remove liquidity failed after reaching max priority fee of ${(solana.config.maxPriorityFee / 1e9).toFixed(6)} SOL`)
 }
 
 export const removeLiquidityRoute: FastifyPluginAsync = async (fastify) => {
   fastify.post<{
-    Body: RemoveLiquidityRequestType
-    Reply: RemoveLiquidityResponseType
+    Body: Static<typeof RaydiumClmmRemoveLiquidityRequest>;
+    Reply: RemoveLiquidityResponseType;
   }>(
     '/remove-liquidity',
     {
       schema: {
         description: 'Remove liquidity from Raydium CLMM position',
-        tags: ['raydium-clmm'],
-        body: {
-          ...RemoveLiquidityRequest,
-          properties: {
-            ...RemoveLiquidityRequest.properties,
-            network: { type: 'string', default: 'mainnet-beta' }
-          }
-        },
+        tags: ['/connector/raydium'],
+        body: RaydiumClmmRemoveLiquidityRequest,
         response: {
-          200: RemoveLiquidityResponse
+          200: RemoveLiquidityResponse,
         },
-      }
+      },
     },
     async (request) => {
       try {
-        const { 
-          network,
-          walletAddress,
-          positionAddress,
-          percentageToRemove,
-        } = request.body
-        
-        return await removeLiquidity(
-          fastify,
-          network || 'mainnet-beta',
-          walletAddress,
-          positionAddress,
-          percentageToRemove,
-        )
-      } catch (e) {
-        logger.error(e)
-        throw fastify.httpErrors.internalServerError('Internal server error')
-      }
-    }
-  )
-}
+        const { network, walletAddress, positionAddress, percentageToRemove } = request.body;
 
-export default removeLiquidityRoute
+        return await removeLiquidity(fastify, network, walletAddress, positionAddress, percentageToRemove, false);
+      } catch (e) {
+        logger.error(e);
+        throw fastify.httpErrors.internalServerError('Internal server error');
+      }
+    },
+  );
+};
+
+export default removeLiquidityRoute;

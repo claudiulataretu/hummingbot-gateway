@@ -1,98 +1,94 @@
-import { FastifyPluginAsync, FastifyInstance } from 'fastify'
-import { Raydium } from '../raydium'
-import { ApiV3PoolInfoConcentratedItem } from '@raydium-io/raydium-sdk-v2'
-import { Solana } from '../../../chains/solana/solana'
-import { PublicKey } from '@solana/web3.js'
-import { logger } from '../../../services/logger'
-import { 
+import { FastifyPluginAsync, FastifyInstance } from 'fastify';
+
+import { Solana } from '../../../chains/solana/solana';
+import {
   CollectFeesRequest,
   CollectFeesResponse,
   CollectFeesRequestType,
-  CollectFeesResponseType
-} from '../../../services/clmm-interfaces'
+  CollectFeesResponseType,
+} from '../../../schemas/clmm-schema';
+import { logger } from '../../../services/logger';
+import { Raydium } from '../raydium';
+
+import { removeLiquidity } from './removeLiquidity';
 
 export async function collectFees(
   fastify: FastifyInstance,
   network: string,
   walletAddress: string,
-  positionAddress: string
+  positionAddress: string,
 ): Promise<CollectFeesResponseType> {
-  const solana = await Solana.getInstance(network)
-  const raydium = await Raydium.getInstance(network)
-  const wallet = await solana.getWallet(walletAddress)
+  const solana = await Solana.getInstance(network);
+  const raydium = await Raydium.getInstance(network);
 
-  const position = await raydium.getClmmPosition(positionAddress)
+  // Prepare wallet and check if it's hardware
+  const { wallet, isHardwareWallet } = await raydium.prepareWallet(walletAddress);
+
+  // Set the owner for SDK operations
+  await raydium.setOwner(wallet);
+
+  const position = await raydium.getClmmPosition(positionAddress);
   if (!position) {
-    throw fastify.httpErrors.notFound(`Position not found: ${positionAddress}`)
+    throw fastify.httpErrors.notFound(`Position not found: ${positionAddress}`);
   }
 
-  const [poolInfo] = await raydium.getClmmPoolfromAPI(position.poolId.toBase58())
+  const [poolInfo] = await raydium.getClmmPoolfromAPI(position.poolId.toBase58());
 
-  const tokenA = await solana.getToken(poolInfo.mintA.address)
-  const tokenB = await solana.getToken(poolInfo.mintB.address)
-  const tokenASymbol = tokenA?.symbol || 'UNKNOWN'
-  const tokenBSymbol = tokenB?.symbol || 'UNKNOWN'
+  const tokenA = await solana.getToken(poolInfo.mintA.address);
+  const tokenB = await solana.getToken(poolInfo.mintB.address);
 
-  logger.info(`Collecting fees from CLMM position ${positionAddress}`)
+  logger.info(`Collecting fees from CLMM position ${positionAddress} by removing 1% liquidity`);
 
-  const { rewardDefaultInfos } = poolInfo
-  const validRewards = rewardDefaultInfos.filter(info => 
-    Number(info.perSecond) > 0 && info.mint?.address
-  )
-  
-  if (validRewards.length === 0) {
-    logger.warn(`No active rewards found for position ${positionAddress}`)
-  }
+  // Remove 1% of liquidity to collect fees
+  const removeLiquidityResponse = await removeLiquidity(
+    fastify,
+    network,
+    walletAddress,
+    positionAddress,
+    1, // 1% of position
+    false, // don't close position
+  );
 
-  const { transaction } = await raydium.raydiumSDK.clmm.collectRewards({
-    poolInfo: poolInfo as ApiV3PoolInfoConcentratedItem,
-    ownerInfo: {
-      useSOLBalance: true,
-    },
-    rewardMints: validRewards.map(info => 
-      new PublicKey(info.mint.address)  // Use direct address access
-    ),
-    associatedOnly: true,
-  })
-  console.log('transaction', transaction)
+  if (removeLiquidityResponse.status === 1 && removeLiquidityResponse.data) {
+    // Use the new helper to extract balance changes including fees
+    const { baseTokenChange, quoteTokenChange } = await solana.extractClmmBalanceChanges(
+      removeLiquidityResponse.signature,
+      walletAddress,
+      tokenA,
+      tokenB,
+      removeLiquidityResponse.data.fee * 1e9,
+    );
 
-  const { signature, fee } = await solana.sendAndConfirmTransaction(transaction, [wallet])
-  
-  const { balanceChange: collectedFeeA } = await solana.extractTokenBalanceChangeAndFee(
-    signature,
-    poolInfo.mintA.address,
-    wallet.publicKey.toBase58()
-  )
-  
-  const { balanceChange: collectedFeeB } = await solana.extractTokenBalanceChangeAndFee(
-    signature,
-    poolInfo.mintB.address,
-    wallet.publicKey.toBase58()
-  )
+    // The total balance change includes both liquidity removal and fee collection
+    // Since we know the liquidity amounts from removeLiquidity response,
+    // we can calculate the fee amounts
+    const baseFeeCollected = Math.abs(baseTokenChange) - removeLiquidityResponse.data.baseTokenAmountRemoved;
+    const quoteFeeCollected = Math.abs(quoteTokenChange) - removeLiquidityResponse.data.quoteTokenAmountRemoved;
 
-  logger.info(`Fees collected from position ${positionAddress}: ${
-    Math.abs(collectedFeeA).toFixed(4)} ${tokenASymbol}, ${
-    Math.abs(collectedFeeB).toFixed(4)} ${tokenBSymbol}`)
+    logger.info(
+      `Fees collected from position ${positionAddress}: ${Math.max(0, baseFeeCollected).toFixed(4)} ${tokenA.symbol}, ${Math.max(0, quoteFeeCollected).toFixed(4)} ${tokenB.symbol}`,
+    );
 
-  return {
-    signature,
-    fee,
-    baseFeeAmountCollected: Math.abs(collectedFeeA),
-    quoteFeeAmountCollected: Math.abs(collectedFeeB)
+    return {
+      signature: removeLiquidityResponse.signature,
+      status: 1, // CONFIRMED
+      data: {
+        fee: removeLiquidityResponse.data.fee,
+        baseFeeAmountCollected: Math.max(0, baseFeeCollected),
+        quoteFeeAmountCollected: Math.max(0, quoteFeeCollected),
+      },
+    };
+  } else {
+    // Return pending status
+    return {
+      signature: removeLiquidityResponse.signature,
+      status: removeLiquidityResponse.status,
+    };
   }
 }
 
 export const collectFeesRoute: FastifyPluginAsync = async (fastify) => {
-  const solana = await Solana.getInstance('mainnet-beta')
-  let firstWalletAddress = '<solana-wallet-address>'
-  
-  try {
-    firstWalletAddress = await solana.getFirstWalletAddress() || firstWalletAddress
-  } catch (error) {
-    logger.debug('No wallets found for examples in schema')
-  }
-  
-  CollectFeesRequest.properties.walletAddress.examples = [firstWalletAddress]
+  const walletAddressExample = await Solana.getWalletAddressExample();
 
   fastify.post<{
     Body: CollectFeesRequestType;
@@ -101,37 +97,32 @@ export const collectFeesRoute: FastifyPluginAsync = async (fastify) => {
     '/collect-fees',
     {
       schema: {
-        description: 'Collect fees from a Raydium CLMM position',
-        tags: ['raydium-clmm'],
+        description: 'Collect fees from a Raydium CLMM position by removing 1% of liquidity',
+        tags: ['/connector/raydium'],
         body: {
           ...CollectFeesRequest,
           properties: {
             ...CollectFeesRequest.properties,
             network: { type: 'string', default: 'mainnet-beta' },
-          }
+            walletAddress: { type: 'string', examples: [walletAddressExample] },
+          },
         },
         response: { 200: CollectFeesResponse },
-      }
+      },
     },
     async (request) => {
       try {
-        const { network, walletAddress, positionAddress } = request.body
-        return await collectFees(
-          fastify,
-          network || 'mainnet-beta',
-          walletAddress,
-          positionAddress
-        )
+        const { network, walletAddress, positionAddress } = request.body;
+        return await collectFees(fastify, network, walletAddress, positionAddress);
       } catch (e) {
-        logger.error(e)
+        logger.error(e);
         if (e.statusCode) {
-          throw fastify.httpErrors.createError(e.statusCode, e.message)
+          throw fastify.httpErrors.createError(e.statusCode, e.message);
         }
-        throw fastify.httpErrors.internalServerError('Failed to collect fees')
+        throw fastify.httpErrors.internalServerError('Failed to collect fees');
       }
-    }
-  )
-}
+    },
+  );
+};
 
-export default collectFeesRoute
-  
+export default collectFeesRoute;
