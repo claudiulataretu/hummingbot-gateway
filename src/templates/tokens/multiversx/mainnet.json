@@ -1,44 +1,38 @@
 [
   {
     "chainId": "1",
-    "name": "EGLD",
-    "symbol": "EGLD",
-    "identifier": "WEGLD-bd4d79",
+    "name": "WEGLD",
+    "symbol": "WEGLD-bd4d79",
     "decimals": 18
   },
   {
     "chainId": "1",
     "name": "USDC",
-    "symbol": "USDC",
-    "identifier": "USDC-c76f1f",
+    "symbol": "USDC-c76f1f",
     "decimals": 6
   },
   {
     "chainId": "1",
     "name": "USDT",
-    "symbol": "USDT",
-    "identifier": "USDT-f8c08c",
+    "symbol": "USDT-f8c08c",
     "decimals": 6
   },
   {
     "chainId": "1",
     "name": "A1X",
-    "symbol": "A1X",
-    "identifier": "A1X-0d446d",
+    "symbol": "A1X-0d446d",
     "decimals": 18
   },
   {
     "chainId": "1",
     "name": "UTK",
-    "symbol": "UTK",
-    "identifier": "UTK-2f80e9",
+    "symbol": "UTK-2f80e9",
     "decimals": 18
   },
   {
     "chainId": "1",
     "name": "PELL",
-    "symbol": "PELL",
-    "identifier": "PELL-00610b",
+    "symbol": "PELL-00610b",
     "decimals": 18
   }
 ]

@@ -1,4 +1,5 @@
 import { Ethereum } from '../chains/ethereum/ethereum';
+import { Multiversx } from '../chains/multiversx/multiversx';
 import { Solana } from '../chains/solana/solana';
 
 export interface Chain {
@@ -32,7 +33,7 @@ export async function getInitializedChain<_T>(chain: string, network: string): P
  */
 export function getSupportedChains(): string[] {
   // These should match the chains in getChainInstance
-  return ['ethereum', 'solana'];
+  return ['ethereum', 'solana', 'multiversx'];
 }
 
 export async function getChainInstance(chain: string, network: string): Promise<ChainInstance | undefined> {

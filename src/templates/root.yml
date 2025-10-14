@@ -13,6 +13,10 @@ configurations:
     configurationPath: chains/solana.yml
     schemaPath: solana-chain-schema.json
 
+  $namespace multiversx:
+    configurationPath: chains/multiversx.yml
+    schemaPath: multiversx-chain-schema.json
+
   # Ethereum networks
   $namespace ethereum-mainnet:
     configurationPath: chains/ethereum/mainnet.yml
@@ -59,6 +63,11 @@ configurations:
     configurationPath: chains/solana/devnet.yml
     schemaPath: solana-network-schema.json
 
+  #Multiversx networks
+  $namespace multiversx-mainnet:
+    configurationPath: chains/multiversx/mainnet.yml
+    schemaPath: multiversx-network-schema.json
+
   # Connectors
   $namespace uniswap:
     configurationPath: connectors/uniswap.yml
@@ -76,13 +85,6 @@ configurations:
     configurationPath: connectors/raydium.yml
     schemaPath: raydium-schema.json
 
-  $namespace multiversx:
-    configurationPath: multiversx.yml
-    schemaPath: multiversx-schema.json
-
-  $namespace xexchange:
-    configurationPath: xexchange.yml
-    schemaPath: xexchange-schema.json
   $namespace 0x:
     configurationPath: connectors/0x.yml
     schemaPath: 0x-schema.json

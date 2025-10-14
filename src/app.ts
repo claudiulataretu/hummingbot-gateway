@@ -14,6 +14,7 @@ import Fastify, { FastifyInstance } from 'fastify';
 
 // Routes
 import { ethereumRoutes } from './chains/ethereum/ethereum.routes';
+import { multiversxRoutes } from './chains/multiversx/multiversx.routes';
 import { solanaRoutes } from './chains/solana/solana.routes';
 import { configRoutes } from './config/config.routes';
 import { register0xRoutes } from './connectors/0x/0x.routes';
@@ -68,6 +69,10 @@ const swaggerOptions = {
       {
         name: '/chain/ethereum',
         description: 'Ethereum and EVM-based chain endpoints',
+      },
+      {
+        name: '/chain/multiversx',
+        description: 'Multiversx chain endpoints',
       },
 
       // Connectors
@@ -214,6 +219,7 @@ const configureGatewayServer = () => {
     // Register chain routes
     app.register(solanaRoutes, { prefix: '/chains/solana' });
     app.register(ethereumRoutes, { prefix: '/chains/ethereum' });
+    app.register(multiversxRoutes, { prefix: '/chains/multiversx' });
 
     // Register DEX connector routes - organized by connector
 

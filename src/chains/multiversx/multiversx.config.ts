@@ -1,46 +1,30 @@
-import { TokenListType } from '../../services/base';
 import { ConfigManagerV2 } from '../../services/config-manager-v2';
 
-export interface NetworkConfig {
-  name: string;
-  chainID: string;
+export interface MultiversxNetworkConfig {
+  chainID: number;
   nodeURL: string;
-  tokenListType: TokenListType;
-  tokenListSource: string;
-}
-
-export interface Config {
-  network: NetworkConfig;
   nativeCurrencySymbol: string;
-  gasLimitTransaction: number;
+  minGasPrice?: number;
 }
 
-export function getMultiversxConfig(
-  chainName: string,
-  networkName: string
-): Config {
-  const network = networkName;
+export interface MultiversxChainConfig {
+  defaultNetwork: string;
+  defaultWallet: string;
+}
+
+export function getMultiversxNetworkConfig(network: string): MultiversxNetworkConfig {
+  const namespaceId = `multiversx-${network}`;
   return {
-    network: {
-      name: network,
-      chainID: ConfigManagerV2.getInstance().get(
-        chainName + '.networks.' + network + '.chainID'
-      ),
-      nodeURL: ConfigManagerV2.getInstance().get(
-        chainName + '.networks.' + network + '.nodeURL'
-      ),
-      tokenListType: ConfigManagerV2.getInstance().get(
-        chainName + '.networks.' + network + '.tokenListType'
-      ),
-      tokenListSource: ConfigManagerV2.getInstance().get(
-        chainName + '.networks.' + network + '.tokenListSource'
-      ),
-    },
-    nativeCurrencySymbol: ConfigManagerV2.getInstance().get(
-      chainName + '.networks.' + network + '.nativeCurrencySymbol'
-    ),
-    gasLimitTransaction: ConfigManagerV2.getInstance().get(
-      chainName + '.gasLimitTransaction'
-    ),
+    chainID: ConfigManagerV2.getInstance().get(namespaceId + '.chainID'),
+    nodeURL: ConfigManagerV2.getInstance().get(namespaceId + '.nodeURL'),
+    nativeCurrencySymbol: ConfigManagerV2.getInstance().get(namespaceId + '.nativeCurrencySymbol'),
+    minGasPrice: ConfigManagerV2.getInstance().get(namespaceId + '.minGasPrice'),
+  };
+}
+
+export function getMultiversxChainConfig(): MultiversxChainConfig {
+  return {
+    defaultNetwork: ConfigManagerV2.getInstance().get('multiversx.defaultNetwork'),
+    defaultWallet: ConfigManagerV2.getInstance().get('multiversx.defaultWallet'),
   };
 }

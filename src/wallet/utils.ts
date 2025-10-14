@@ -1,7 +1,9 @@
+import { Address } from '@multiversx/sdk-core/out';
 import { FastifyInstance } from 'fastify';
 import fse from 'fs-extra';
 
 import { Ethereum } from '../chains/ethereum/ethereum';
+import { Multiversx } from '../chains/multiversx/multiversx';
 import { Solana } from '../chains/solana/solana';
 import { updateDefaultWallet } from '../config/utils';
 import { ConfigManagerCertPassphrase } from '../services/config-manager-cert-passphrase';
@@ -43,7 +45,7 @@ export function validateChainName(chain: string): boolean {
   } catch (error) {
     // Fallback to hardcoded list if there's an error
     logger.warn(`Failed to get supported chains: ${error.message}. Using fallback list.`);
-    return ['ethereum', 'solana'].includes(chain.toLowerCase());
+    return ['ethereum', 'solana', 'multiversx'].includes(chain.toLowerCase());
   }
 }
 
@@ -111,6 +113,9 @@ export async function addWallet(fastify: FastifyInstance, req: AddWalletRequest)
       // Further validate Solana address
       address = Solana.validateAddress(address);
       encryptedPrivateKey = await connection.encrypt(req.privateKey, passphrase);
+    } else if (connection instanceof Multiversx) {
+      address = connection.getWalletFromPrivateKey(req.privateKey).getAddress().toBech32();
+      encryptedPrivateKey = connection.encrypt(req.privateKey, passphrase);
     }
 
     if (address === undefined || encryptedPrivateKey === undefined) {
@@ -246,7 +251,7 @@ export async function getWallets(
     await mkdirIfDoesNotExist(walletPath);
 
     // Get only valid chain directories
-    const validChains = ['ethereum', 'solana'];
+    const validChains = ['ethereum', 'solana', 'multiversx'];
     const allDirs = await getDirectories(walletPath);
     const chains = allDirs.filter((dir) => validChains.includes(dir.toLowerCase()));
 
@@ -268,6 +273,9 @@ export async function getWallets(
             } else if (chain.toLowerCase() === 'solana') {
               // Basic Solana address length check
               return address.length >= 32 && address.length <= 44;
+            } else if (chain.toLowerCase() === 'multiversx') {
+              // Basic Solana address length check
+              return Address.isValid(address);
             }
             return false;
           } catch {

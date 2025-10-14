@@ -29,6 +29,7 @@ export type TokenFileFormat = Token[];
 export enum SupportedChain {
   ETHEREUM = 'ethereum',
   SOLANA = 'solana',
+  MULTIVERSX = 'multiversx',
 }
 
 // Chain validation

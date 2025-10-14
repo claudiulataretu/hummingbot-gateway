@@ -8,8 +8,8 @@ export const WalletAddressSchema = Type.String({
 export const AddWalletRequestSchema = Type.Object({
   chain: Type.String({
     description: 'Blockchain to add wallet to',
-    enum: ['ethereum', 'solana'],
-    examples: ['solana', 'ethereum'],
+    enum: ['ethereum', 'solana', 'multiversx'],
+    examples: ['solana', 'ethereum', 'multiversx'],
   }),
   privateKey: Type.String({
     description: 'Private key for the wallet',
@@ -51,7 +51,7 @@ export const GetWalletResponseSchema = Type.Object({
 export const RemoveWalletRequestSchema = Type.Object({
   chain: Type.String({
     description: 'Blockchain to remove wallet from',
-    enum: ['ethereum', 'solana'],
+    enum: ['ethereum', 'solana', 'multiversx'],
     examples: ['solana', 'ethereum'],
   }),
   address: Type.String({

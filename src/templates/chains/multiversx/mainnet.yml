@@ -1,0 +1,4 @@
+chainID: 1
+nodeURL: https://gateway.multiversx.com
+nativeCurrencySymbol: EGLD
+minGasPrice: 0.1
