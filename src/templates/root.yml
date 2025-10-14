@@ -88,3 +88,7 @@ configurations:
   $namespace 0x:
     configurationPath: connectors/0x.yml
     schemaPath: 0x-schema.json
+
+  $namespace xexchange:
+    configurationPath: connectors/xexchange.yml
+    schemaPath: xexchange-schema.json

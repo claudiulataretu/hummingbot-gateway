@@ -73,6 +73,7 @@ export async function getConnector(
     const { Meteora } = await import('../connectors/meteora/meteora');
     return await Meteora.getInstance(network);
   } else if (connector === 'xexchange') {
+    const { XExchange } = await import('../connectors/xexchange/xexchange');
     return await XExchange.getInstance(network);
   } else {
     throw new Error('unsupported chain or connector');

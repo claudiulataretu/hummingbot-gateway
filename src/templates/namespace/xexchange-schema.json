@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "slippagePct": {
+      "type": "number",
+      "description": "Default slippage percentage (e.g., 2 for 2%)"
+    },
+    "maximumHops": {
+      "type": "integer",
+      "description": "Maximum number of hops to consider for each swap"
+    },
+    "gasLimitEstimate": {
+      "type": "number",
+      "description": "Gas limit for a single swap"
+    },
+    "routerAbi": {
+      "type": "string",
+      "description": "Router abi path"
+    },
+    "pairAbi": {
+      "type": "string",
+      "description": "Pair abi path"
+    }
+  },
+  "additionalProperties": false,
+  "required": ["slippagePct", "maximumHops", "gasLimitEstimate", "routerAbi", "pairAbi"]
+}

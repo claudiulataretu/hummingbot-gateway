@@ -1,0 +1,13 @@
+# Global settings for xExchange
+
+# Default slippage percentage for swaps (2%)
+slippagePct: 2
+
+# For each swap, the maximum number of hops to consider
+maximumHops: 4
+
+# the maximum gas used to estimate gasCost for a uniswap trade.
+gasLimitEstimate: 25000000
+
+routerAbi: 'src/connectors/xexchange/router.abi.json'
+pairAbi: 'src/connectors/xexchange/pair.abi.json'

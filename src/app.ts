@@ -22,6 +22,7 @@ import { jupiterRoutes } from './connectors/jupiter/jupiter.routes';
 import { meteoraRoutes } from './connectors/meteora/meteora.routes';
 import { raydiumRoutes } from './connectors/raydium/raydium.routes';
 import { uniswapRoutes } from './connectors/uniswap/uniswap.routes';
+import { xExchageRoutes } from './connectors/xexchange/xexchange.routes';
 import { getHttpsOptions } from './https';
 import { poolRoutes } from './pools/pools.routes';
 import { ConfigManagerV2 } from './services/config-manager-v2';
@@ -93,6 +94,7 @@ const swaggerOptions = {
         description: 'Uniswap connector endpoints',
       },
       { name: '/connector/0x', description: '0x connector endpoints' },
+      { name: '/connector/xexchange', descriptin: 'xExchange connector endpoints' },
     ],
     components: {
       parameters: {
@@ -244,6 +246,9 @@ const configureGatewayServer = () => {
 
     // 0x routes
     app.register(register0xRoutes);
+
+    // xExchange routes
+    app.register(xExchageRoutes.amm, { prefix: '/connectors/xexchange/amm' });
   };
 
   // Register routes on main server

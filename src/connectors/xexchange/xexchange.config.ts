@@ -1,49 +1,39 @@
+import { AvailableNetworks } from '#src/services/base';
+
 import { ConfigManagerV2 } from '../../services/config-manager-v2';
-import { AvailableNetworks } from '../connector.requests';
+
 export namespace XExchangeConfig {
-  export interface NetworkConfig {
-    allowedSlippage: string;
+  // Supported networks for Uniswap
+  // See https://docs.uniswap.org/protocol/reference/deployments
+  export const chain = 'multiversx';
+  export const networks = ['mainnet'];
+  export type Network = string;
+
+  // Supported trading types
+  export const tradingTypes = ['amm'] as const;
+
+  export interface RootConfig {
+    // Global configuration
+    slippagePct: number;
     gasLimitEstimate: number;
-    maximumHops: number;
     routerAbi: string;
     pairAbi: string;
-    routerAddress: (network: string) => string;
-    tradingTypes: Array<string>;
+
+    // Available networks
     availableNetworks: Array<AvailableNetworks>;
-    useRouter?: boolean;
-    ttl: number;
-    chainType: string;
   }
 
-  export const config: NetworkConfig = {
-    allowedSlippage: ConfigManagerV2.getInstance().get(
-      `xexchange.allowedSlippage`,
-    ),
-    gasLimitEstimate: ConfigManagerV2.getInstance().get(
-      `xexchange.gasLimitEstimate`,
-    ),
-    maximumHops: ConfigManagerV2.getInstance().get(`xexchange.maximumHops`),
-    tradingTypes: ['AMM'],
-    routerAbi: ConfigManagerV2.getInstance().get(`xexchange.routerAbi`),
-    pairAbi: ConfigManagerV2.getInstance().get(`xexchange.pairAbi`),
-    routerAddress: (network: string) =>
-      ConfigManagerV2.getInstance().get(
-        `xexchange.contractAddresses.${network}.routerAddress`,
-      ),
+  export const config: RootConfig = {
+    slippagePct: ConfigManagerV2.getInstance().get('xexchange.slippagePct'),
+    gasLimitEstimate: ConfigManagerV2.getInstance().get('xexchange.gasLimitEstimate'),
+    routerAbi: ConfigManagerV2.getInstance().get('xexchange.routerAbi'),
+    pairAbi: ConfigManagerV2.getInstance().get('xexchange.pairAbi'),
+
     availableNetworks: [
       {
-        chain: 'multiversx',
-        networks: Object.keys(
-          ConfigManagerV2.getInstance().get('xexchange.contractAddresses'),
-        ).filter((network) =>
-          Object.keys(
-            ConfigManagerV2.getInstance().get('multiversx.networks'),
-          ).includes(network),
-        ),
+        chain,
+        networks: networks,
       },
     ],
-    useRouter: ConfigManagerV2.getInstance().get(`xexchange.useRouter`),
-    ttl: ConfigManagerV2.getInstance().get(`xexchange.ttl`),
-    chainType: 'MVX',
   };
 }
