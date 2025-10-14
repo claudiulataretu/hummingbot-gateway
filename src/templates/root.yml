@@ -89,6 +89,19 @@ configurations:
     configurationPath: connectors/0x.yml
     schemaPath: 0x-schema.json
 
+  $namespace pancakeswap:
+    configurationPath: connectors/pancakeswap.yml
+    schemaPath: pancakeswap-schema.json
+
   $namespace xexchange:
     configurationPath: connectors/xexchange.yml
     schemaPath: xexchange-schema.json
+
+  # RPC providers
+  $namespace helius:
+    configurationPath: rpc/helius.yml
+    schemaPath: helius-schema.json
+
+  $namespace infura:
+    configurationPath: rpc/infura.yml
+    schemaPath: infura-schema.json
