@@ -11,6 +11,7 @@ export async function getMultiversxStatus(network: string): Promise<StatusRespon
     const multiversx = await Multiversx.getInstance(network);
     const chain = multiversx.chain;
     const rpcUrl = multiversx.rpcUrl;
+    const rpcProvider = 'url';
     const nativeCurrency = multiversx.nativeTokenSymbol;
 
     // Directly try to get the current block number with a timeout
@@ -33,6 +34,7 @@ export async function getMultiversxStatus(network: string): Promise<StatusRespon
       chain,
       network,
       rpcUrl,
+      rpcProvider,
       currentBlockNumber,
       nativeCurrency,
     };
@@ -72,6 +74,7 @@ export const statusRoute: FastifyPluginAsync = async (fastify) => {
           chain: 'multiversx',
           network,
           rpcUrl: 'unavailable',
+          rpcProvider: 'unavailable',
           currentBlockNumber: 0,
           nativeCurrency: 'EGLD',
         };
