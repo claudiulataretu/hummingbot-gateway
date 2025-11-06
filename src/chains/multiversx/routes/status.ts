@@ -37,6 +37,7 @@ export async function getMultiversxStatus(network: string): Promise<StatusRespon
       rpcProvider,
       currentBlockNumber,
       nativeCurrency,
+      swapProvider: multiversx.swapProvider,
     };
   } catch (error) {
     logger.error(`Error getting Multiversx status: ${error.message}`);
@@ -77,6 +78,7 @@ export const statusRoute: FastifyPluginAsync = async (fastify) => {
           rpcProvider: 'unavailable',
           currentBlockNumber: 0,
           nativeCurrency: 'EGLD',
+          swapProvider: '',
         };
       }
     },

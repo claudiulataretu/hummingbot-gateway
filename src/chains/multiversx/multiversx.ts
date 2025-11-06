@@ -29,6 +29,7 @@ export class Multiversx {
   public nativeTokenSymbol: string;
   public chainId: number;
   public rpcUrl: string;
+  public swapProvider: string;
   public minGasPrice: number;
   private _initialized: boolean = false;
 
@@ -41,6 +42,7 @@ export class Multiversx {
     const config = getMultiversxNetworkConfig(network);
     this.chainId = config.chainID;
     this.rpcUrl = config.nodeURL;
+    this.swapProvider = config.swapProvider || '';
     this.provider = new ProxyNetworkProvider(this.rpcUrl);
     logger.info(`Initializing Multiversx connector for network: ${network}, nodeURL: ${this.rpcUrl}`);
     this.network = network;
