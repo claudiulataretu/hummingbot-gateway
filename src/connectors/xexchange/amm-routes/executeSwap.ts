@@ -32,7 +32,7 @@ export async function executeAmmSwap(
   const poolAddress = await xexchange.findDefaultPool(baseTokenInfo, quoteTokenInfo);
 
   // Get quote using the shared quote function
-  const quote = await quoteAmmSwap(xexchange, poolAddress, baseTokenInfo, quoteTokenInfo, amount, side, slippagePct);
+  const quote = await quoteAmmSwap(xexchange, baseTokenInfo, quoteTokenInfo, amount, side, slippagePct);
 
   logger.info(`Executing swap`);
   logger.info(`Pool address: ${poolAddress}`);
@@ -65,7 +65,9 @@ export async function executeAmmSwap(
     const tx = await xexchange.executeTrade(wallet, trade);
     const signature = await wallet.sign(tx.serializeForSigning());
     tx.applySignature(new Uint8Array(signature));
-    logger.info(`Transaction body: ${JSON.stringify(tx.toPlainObject())}`);
+
+    const txHash = await multiversx.provider.sendTransaction(tx);
+
     // Calculate amounts using quote values
     const amountIn = quote.estimatedAmountIn;
     const amountOut = quote.estimatedAmountOut;
@@ -81,12 +83,46 @@ export async function executeAmmSwap(
     // );
 
     // Determine token addresses for computed fields
-    const tokenIn = quote.inputToken.name;
-    const tokenOut = quote.outputToken.name;
+    const tokenIn = quote.inputToken.name === 'WEGLD' ? 'EGLD' : quote.inputToken.name;
+    const tokenOut = quote.outputToken.name === 'WEGLD' ? 'EGLD' : quote.outputToken.name;
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    let txData = await multiversx.getTransaction(txHash);
+
+    if (!txData || txData.status.isPending()) {
+      const MAX_RETRIES = 5;
+      const RETRY_DELAY_MS = 6000;
+      let retryCount = 0;
+
+      while (retryCount < MAX_RETRIES) {
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+        txData = await multiversx.getTransaction(txHash);
+        if (txData && txData.status.isExecuted()) break;
+        retryCount++;
+      }
+
+      if (!txData) {
+        // tx not found after retries
+        logger.info(`Transaction ${txHash} not found in mempool or does not exist after ${MAX_RETRIES} retries.`);
+        return {
+          signature: txHash,
+          status: -1,
+          data: {
+            tokenIn,
+            tokenOut,
+            amountIn,
+            amountOut,
+            fee: 0,
+            baseTokenBalanceChange,
+            quoteTokenBalanceChange,
+          },
+        };
+      }
+    }
 
     return {
-      signature: tx.getHash().toString(),
-      status: 1, // CONFIRMED
+      signature: txHash,
+      status: txData.status.isSuccessful() ? 1 : -1, // CONFIRMED
       data: {
         tokenIn,
         tokenOut,
@@ -136,12 +172,15 @@ export const executeSwapRoute: FastifyPluginAsync = async (fastify) => {
         const {
           walletAddress = multiversxConfig.defaultWallet,
           network = multiversxConfig.defaultNetwork,
-          baseToken,
-          quoteToken,
           amount,
           side = 'SELL',
           slippagePct = 1,
         } = request.body as typeof UniswapAmmExecuteSwapRequest._type;
+
+        let { baseToken, quoteToken } = request.body as typeof UniswapAmmExecuteSwapRequest._type;
+
+        baseToken = baseToken === 'EGLD' ? 'WEGLD' : baseToken;
+        quoteToken = quoteToken === 'EGLD' ? 'WEGLD' : quoteToken;
 
         return await executeAmmSwap(
           fastify,

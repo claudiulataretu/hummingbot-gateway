@@ -2,6 +2,7 @@ import { Type, Static } from '@sinclair/typebox';
 import { FastifyPluginAsync } from 'fastify';
 
 import { PancakeswapConfig } from '#src/connectors/pancakeswap/pancakeswap.config';
+import { XExchangeConfig } from '#src/connectors/xexchange/xexchange.config';
 
 import { ZeroXConfig } from '../../connectors/0x/0x.config';
 import { JupiterConfig } from '../../connectors/jupiter/jupiter.config';
@@ -62,6 +63,12 @@ export const connectorsConfig = [
     trading_types: [...PancakeswapConfig.tradingTypes],
     chain: PancakeswapConfig.chain,
     networks: [...PancakeswapConfig.networks],
+  },
+  {
+    name: 'xexchange',
+    trading_types: [...XExchangeConfig.tradingTypes],
+    chain: XExchangeConfig.chain,
+    networks: [...XExchangeConfig.networks],
   },
 ];
 
