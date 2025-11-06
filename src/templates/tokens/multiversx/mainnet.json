@@ -2,37 +2,50 @@
   {
     "chainId": "1",
     "name": "WEGLD",
-    "symbol": "WEGLD-bd4d79",
+    "symbol": "WEGLD",
+    "address": "WEGLD-bd4d79",
     "decimals": 18
   },
   {
     "chainId": "1",
     "name": "USDC",
-    "symbol": "USDC-c76f1f",
+    "symbol": "USDC",
+    "address": "USDC-c76f1f",
     "decimals": 6
   },
   {
     "chainId": "1",
     "name": "USDT",
-    "symbol": "USDT-f8c08c",
+    "symbol": "USDT",
+    "address": "USDT-f8c08c",
     "decimals": 6
   },
   {
     "chainId": "1",
     "name": "A1X",
-    "symbol": "A1X-0d446d",
+    "symbol": "A1X",
+    "address": "A1X-0d446d",
     "decimals": 18
   },
   {
     "chainId": "1",
     "name": "UTK",
-    "symbol": "UTK-2f80e9",
+    "symbol": "UTK",
+    "address": "UTK-2f80e9",
     "decimals": 18
   },
   {
     "chainId": "1",
     "name": "PELL",
-    "symbol": "PELL-00610b",
+    "symbol": "PELL",
+    "address": "PELL-00610b",
+    "decimals": 18
+  },
+  {
+    "chainId": "1",
+    "name": "MEX",
+    "symbol": "MEX",
+    "address": "MEX-455c57",
     "decimals": 18
   }
 ]

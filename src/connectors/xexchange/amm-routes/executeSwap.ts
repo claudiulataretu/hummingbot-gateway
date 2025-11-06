@@ -54,8 +54,8 @@ export async function executeAmmSwap(
       trade: {
         pairAddress: poolAddress,
         tradeType: side === 'SELL' ? TradeType.EXACT_INPUT : TradeType.EXACT_OUTPUT,
-        inputToken: quote.inputToken.symbol,
-        outputToken: quote.outputToken.symbol,
+        inputToken: quote.inputToken.address,
+        outputToken: quote.outputToken.address,
         inputAmount: quote.rawAmountIn,
         outputAmount: quote.rawAmountOut,
       },

@@ -255,12 +255,13 @@ export class Multiversx {
 
   async getESDTBalance(address: string, tokenName: string): Promise<TokenValue> {
     logger.info('Requesting balance for owner ' + address + '.');
+
     const token = this.getToken(tokenName);
     if (!token) {
       throw new Error(`Token ${tokenName} not found`);
     }
 
-    const result = await this.provider.getFungibleTokenOfAccount(Address.fromBech32(address), token?.symbol);
+    const result = await this.provider.getFungibleTokenOfAccount(Address.fromBech32(address), token?.address);
     logger.info(`Raw balance of ${tokenName} for ` + `${address}: ${result.balance.toFixed()}`);
     return {
       value: BigNumber.from(result.balance.toFixed()),
@@ -312,6 +313,10 @@ export class Multiversx {
     logger.info(`Checking balances for all ${effectiveTokens.toString()} tokens in the token list`);
 
     for (const tokenName of effectiveTokens) {
+      if (tokenName === this.nativeTokenSymbol) {
+        continue;
+      }
+
       const tokenValue = await this.getESDTBalance(address, tokenName);
       balances[tokenName] = parseFloat(tokenValueToString(tokenValue));
     }

@@ -116,8 +116,8 @@ export class XExchange {
 
   async findDefaultPool(baseToken: Token, quoteToken: Token): Promise<string> {
     const interaction = this._router.methodsExplicit.getPair([
-      TokenIdentifierValue.esdtTokenIdentifier(baseToken.symbol),
-      TokenIdentifierValue.esdtTokenIdentifier(quoteToken.symbol),
+      TokenIdentifierValue.esdtTokenIdentifier(baseToken.address),
+      TokenIdentifierValue.esdtTokenIdentifier(quoteToken.address),
     ]);
     const queryResult = await this.multiversx.provider.queryContract(interaction.buildQuery());
     const result = new ResultsParser().parseQueryResponse(queryResult, interaction.getEndpoint());
@@ -129,8 +129,8 @@ export class XExchange {
 
   async getPrice(baseToken: Token, quoteToken: Token): Promise<string> {
     let interaction = this._router.methodsExplicit.getPair([
-      TokenIdentifierValue.esdtTokenIdentifier(baseToken.symbol),
-      TokenIdentifierValue.esdtTokenIdentifier(quoteToken.symbol),
+      TokenIdentifierValue.esdtTokenIdentifier(baseToken.address),
+      TokenIdentifierValue.esdtTokenIdentifier(quoteToken.address),
     ]);
     let queryResult = await this.multiversx.provider.queryContract(interaction.buildQuery());
     let result = new ResultsParser().parseQueryResponse(queryResult, interaction.getEndpoint());
@@ -139,7 +139,9 @@ export class XExchange {
 
     const pairContract = await this.getPairSmartContract(pairAddress.bech32());
 
-    interaction = pairContract.methodsExplicit.getReserve([TokenIdentifierValue.esdtTokenIdentifier(baseToken.symbol)]);
+    interaction = pairContract.methodsExplicit.getReserve([
+      TokenIdentifierValue.esdtTokenIdentifier(baseToken.address),
+    ]);
 
     queryResult = await this.multiversx.provider.queryContract(interaction.buildQuery());
 
@@ -147,7 +149,7 @@ export class XExchange {
     const baseReserves: BigNumber = result.firstValue?.valueOf();
 
     interaction = pairContract.methodsExplicit.getReserve([
-      TokenIdentifierValue.esdtTokenIdentifier(quoteToken.symbol),
+      TokenIdentifierValue.esdtTokenIdentifier(quoteToken.address),
     ]);
 
     queryResult = await this.multiversx.provider.queryContract(interaction.buildQuery());
@@ -314,7 +316,7 @@ export class XExchange {
     }
     const account = await this.multiversx.provider.getAccount(wallet.getAddress());
     interaction
-      .withGasLimit(30000000)
+      .withGasLimit(24000000)
       .withChainID(this.chainId.toString())
       .withSender(wallet.getAddress())
       .withNonce(account.nonce);

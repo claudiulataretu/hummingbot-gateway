@@ -16,7 +16,6 @@ import { ExpectedTrade, XExchange } from '../xexchange';
 
 export async function quoteAmmSwap(
   xexchange: XExchange,
-  poolAddress: string,
   baseToken: Token,
   quoteToken: Token,
   amount: number,
@@ -37,7 +36,7 @@ export async function quoteAmmSwap(
     if (exactIn) {
       // For SELL (exactIn), we use the input amount and EXACT_INPUT trade type
       const amountBig = new BigNumber(amount).multipliedBy(`1e${inputToken.decimals}`);
-      trade = await xexchange.estimateSellTrade(inputToken.symbol, outputToken.symbol, amountBig);
+      trade = await xexchange.estimateSellTrade(inputToken.address, outputToken.address, amountBig);
       minAmountOut = new BigNumber(trade.expectedAmount).multipliedBy(1 - slippageTolerance / 100).toFixed();
       maxAmountIn = amountBig;
       estimatedAmountIn = formatTokenAmount(amountBig.toFixed(), inputToken.decimals);
@@ -47,7 +46,7 @@ export async function quoteAmmSwap(
     } else {
       const amountBig = new BigNumber(amount).multipliedBy(`1e${outputToken.decimals}`);
       // For BUY (exactOut), we use the output amount and EXACT_OUTPUT trade type
-      trade = await xexchange.estimateBuyTrade(inputToken.symbol, outputToken.symbol, amountBig);
+      trade = await xexchange.estimateBuyTrade(inputToken.address, outputToken.address, amountBig);
       minAmountOut = amountBig;
       maxAmountIn = new BigNumber(trade.expectedAmount).multipliedBy(1 + slippageTolerance / 100);
       estimatedAmountIn = formatTokenAmount(trade.expectedAmount, inputToken.decimals);
@@ -60,7 +59,7 @@ export async function quoteAmmSwap(
     const maxAmountInValue = formatTokenAmount(maxAmountIn, inputToken.decimals);
 
     return {
-      poolAddress,
+      poolAddress: trade.trade.pairAddress,
       estimatedAmountIn,
       estimatedAmountOut,
       minAmountOut: minAmountOutValue,
@@ -78,7 +77,7 @@ export async function quoteAmmSwap(
     logger.error(`Error quoting AMM swap: ${error.message}`);
     // Check for insufficient reserves error from Uniswap SDK
     if (error.isInsufficientReservesError || error.name === 'InsufficientReservesError') {
-      throw new Error(`Insufficient liquidity in pool for ${baseToken.symbol}-${quoteToken.symbol}`);
+      throw new Error(`Insufficient liquidity in pool for ${baseToken.address}-${quoteToken.address}`);
     }
     throw error;
   }
@@ -86,7 +85,6 @@ export async function quoteAmmSwap(
 
 async function formatSwapQuote(
   network: string,
-  poolAddress: string,
   baseToken: string,
   quoteToken: string,
   amount: number,
@@ -94,7 +92,7 @@ async function formatSwapQuote(
   slippagePct?: number,
 ): Promise<QuoteSwapResponseType> {
   logger.info(
-    `formatSwapQuote: poolAddress=${poolAddress}, baseToken=${baseToken}, quoteToken=${quoteToken}, amount=${amount}, side=${side}, network=${network}`,
+    `formatSwapQuote: baseToken=${baseToken}, quoteToken=${quoteToken}, amount=${amount}, side=${side}, network=${network}`,
   );
 
   try {
@@ -102,7 +100,7 @@ async function formatSwapQuote(
     const baseTokenInfo = xexchange.getTokenByName(baseToken);
     const quoteTokenInfo = xexchange.getTokenByName(quoteToken);
     // Use the extracted quote function
-    const quote = await quoteAmmSwap(xexchange, poolAddress, baseTokenInfo, quoteTokenInfo, amount, side, slippagePct);
+    const quote = await quoteAmmSwap(xexchange, baseTokenInfo, quoteTokenInfo, amount, side, slippagePct);
 
     logger.info(
       `Quote result: estimatedAmountIn=${quote.estimatedAmountIn}, estimatedAmountOut=${quote.estimatedAmountOut}`,
@@ -128,12 +126,12 @@ async function formatSwapQuote(
     const priceImpactPct = quote.priceImpact;
 
     // Determine token addresses for computed fields
-    const tokenIn = quote.inputToken.name;
-    const tokenOut = quote.outputToken.name;
+    const tokenIn = quote.inputToken.name === 'WEGLD' ? 'EGLD' : quote.inputToken.name;
+    const tokenOut = quote.outputToken.name === 'WEGLD' ? 'EGLD' : quote.outputToken.name;
 
     return {
       // Base QuoteSwapResponse fields in correct order
-      poolAddress,
+      poolAddress: quote.poolAddress,
       tokenIn,
       tokenOut,
       amountIn: quote.estimatedAmountIn,
@@ -164,14 +162,14 @@ export const quoteSwapRoute: FastifyPluginAsync = async (fastify) => {
     '/quote-swap',
     {
       schema: {
-        description: 'Get swap quote for Raydium AMM',
+        description: 'Get swap quote for xExchange AMM',
         tags: ['/connector/xexchange'],
         querystring: {
           ...QuoteSwapRequest,
           properties: {
             ...QuoteSwapRequest.properties,
-            network: { type: 'string', default: 'base' },
-            baseToken: { type: 'string', examples: ['WETH'] },
+            network: { type: 'string', default: 'mainnet' },
+            baseToken: { type: 'string', examples: ['WEGLD'] },
             quoteToken: { type: 'string', examples: ['USDC'] },
             amount: { type: 'number', examples: [0.001] },
             side: { type: 'string', enum: ['BUY', 'SELL'], examples: ['SELL'] },
@@ -186,8 +184,12 @@ export const quoteSwapRoute: FastifyPluginAsync = async (fastify) => {
     },
     async (request) => {
       try {
-        const { network, poolAddress, baseToken, quoteToken, amount, side, slippagePct } = request.query;
+        const { network, amount, side, slippagePct } = request.query;
+        let { baseToken, quoteToken } = request.query;
         const networkToUse = network;
+
+        baseToken = baseToken === 'EGLD' ? 'WEGLD' : baseToken;
+        quoteToken = quoteToken === 'EGLD' ? 'WEGLD' : quoteToken;
 
         // Validate essential parameters
         if (!baseToken || !quoteToken || !amount || !side) {
@@ -207,7 +209,6 @@ export const quoteSwapRoute: FastifyPluginAsync = async (fastify) => {
 
         const result = await formatSwapQuote(
           networkToUse,
-          poolAddress,
           baseToken,
           quoteToken,
           amount,
