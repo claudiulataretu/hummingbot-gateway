@@ -123,16 +123,14 @@ export class Multiversx {
    * Get token info by symbol or address
    */
   public getToken(tokenName: string): Token | undefined {
-    // First try to find token by symbol
-    const tokenByName = this.tokenList.find(
+    // Fast path: look up by symbol via tokenMap
+    const bySymbol = this.tokenMap[tokenName.toUpperCase()] ?? this.tokenMap[tokenName];
+    if (bySymbol) return bySymbol;
+
+    // Fall back to name match
+    return this.tokenList.find(
       (token: Token) => token.name.toUpperCase() === tokenName.toUpperCase() && token.chainId === this.chainId,
     );
-
-    if (tokenByName) {
-      return tokenByName;
-    }
-
-    return undefined;
   }
 
   /**

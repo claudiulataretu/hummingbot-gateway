@@ -139,7 +139,7 @@ export async function executeAmmSwap(
     // Handle specific error cases
     if (error.message && error.message.includes('insufficient funds')) {
       throw fastify.httpErrors.badRequest(
-        'Insufficient funds for transaction. Please ensure you have enough ETH to cover gas costs.',
+        'Insufficient funds for transaction. Please ensure you have enough EGLD to cover gas costs.',
       );
     }
 

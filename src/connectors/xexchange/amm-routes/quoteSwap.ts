@@ -137,7 +137,7 @@ async function formatSwapQuote(
       amountIn: quote.estimatedAmountIn,
       amountOut: quote.estimatedAmountOut,
       price,
-      slippagePct: slippagePct || 1, // Default 1% if not provided
+      slippagePct: slippagePct ?? 1, // Default 1% if not provided
       minAmountOut: quote.minAmountOut,
       maxAmountIn: quote.maxAmountIn,
       // AMM-specific fields
@@ -153,8 +153,6 @@ async function formatSwapQuote(
 }
 
 export const quoteSwapRoute: FastifyPluginAsync = async (fastify) => {
-  await fastify.register(require('@fastify/sensible'));
-
   fastify.get<{
     Querystring: QuoteSwapRequestType;
     Reply: QuoteSwapResponseType;
