@@ -37,9 +37,9 @@ export class XExchange {
 
   private _router: SmartContract = new SmartContract();
   private _router_address: string;
+  private _pairAbi: AbiRegistry | null = null;
 
   private chainId: number;
-  private tokenList: Record<string, Token> = {};
   private _ready: boolean = false;
 
   // Network information
@@ -68,18 +68,16 @@ export class XExchange {
     this.multiversx = await Multiversx.getInstance(this.networkName);
     this.chainId = this.multiversx.chainId;
 
-    this.multiversx.storedTokenList.forEach((token: Token) => (this.tokenList[token.symbol] = token));
-
-    const jsonContent: string = await promises.readFile(this.config.routerAbi, {
-      encoding: 'utf8',
-    });
-    const json = JSON.parse(jsonContent);
+    const routerJson = JSON.parse(await promises.readFile(this.config.routerAbi, { encoding: 'utf8' }));
     this._router = new SmartContract({
       address: Address.fromBech32(this._router_address),
-      abi: AbiRegistry.create(json),
+      abi: AbiRegistry.create(routerJson),
     });
 
-    // Ensure ethereum is initialized
+    const pairJson = JSON.parse(await promises.readFile(this.config.pairAbi, { encoding: 'utf8' }));
+    this._pairAbi = AbiRegistry.create(pairJson);
+
+    // Ensure multiversx is initialized
     if (!this.multiversx.ready()) {
       await this.multiversx.init();
     }
@@ -127,43 +125,6 @@ export class XExchange {
     return pairAddress;
   }
 
-  async getPrice(baseToken: Token, quoteToken: Token): Promise<string> {
-    let interaction = this._router.methodsExplicit.getPair([
-      TokenIdentifierValue.esdtTokenIdentifier(baseToken.address),
-      TokenIdentifierValue.esdtTokenIdentifier(quoteToken.address),
-    ]);
-    let queryResult = await this.multiversx.provider.queryContract(interaction.buildQuery());
-    let result = new ResultsParser().parseQueryResponse(queryResult, interaction.getEndpoint());
-
-    const pairAddress = result.firstValue?.valueOf();
-
-    const pairContract = await this.getPairSmartContract(pairAddress.bech32());
-
-    interaction = pairContract.methodsExplicit.getReserve([
-      TokenIdentifierValue.esdtTokenIdentifier(baseToken.address),
-    ]);
-
-    queryResult = await this.multiversx.provider.queryContract(interaction.buildQuery());
-
-    result = new ResultsParser().parseQueryResponse(queryResult, interaction.getEndpoint());
-    const baseReserves: BigNumber = result.firstValue?.valueOf();
-
-    interaction = pairContract.methodsExplicit.getReserve([
-      TokenIdentifierValue.esdtTokenIdentifier(quoteToken.address),
-    ]);
-
-    queryResult = await this.multiversx.provider.queryContract(interaction.buildQuery());
-
-    result = new ResultsParser().parseQueryResponse(queryResult, interaction.getEndpoint());
-    const quoteReserves: BigNumber = result.firstValue?.valueOf();
-
-    const price = quoteReserves
-      .dividedBy(10 ** quoteToken.decimals)
-      .dividedBy(baseReserves.dividedBy(10 ** baseToken.decimals));
-
-    return price.toFixed(9);
-  }
-
   /**
    * Given the amount of `baseToken` to put into a transaction, calculate the
    * amount of `quoteToken` that can be expected from the transaction.
@@ -184,7 +145,7 @@ export class XExchange {
     let result = new ResultsParser().parseQueryResponse(queryResult, interaction.getEndpoint());
 
     const pairAddress = result.firstValue?.valueOf();
-    const pairContract = await this.getPairSmartContract(pairAddress.bech32());
+    const pairContract = this.getPairSmartContract(pairAddress.bech32());
 
     interaction = pairContract.methodsExplicit.getEquivalent([
       TokenIdentifierValue.esdtTokenIdentifier(baseToken),
@@ -239,7 +200,7 @@ export class XExchange {
     let result = new ResultsParser().parseQueryResponse(queryResult, interaction.getEndpoint());
 
     const pairAddress = result.firstValue?.valueOf();
-    const pairContract = await this.getPairSmartContract(pairAddress.bech32());
+    const pairContract = this.getPairSmartContract(pairAddress.bech32());
 
     interaction = pairContract.methodsExplicit.getEquivalent([
       TokenIdentifierValue.esdtTokenIdentifier(baseToken),
@@ -290,7 +251,7 @@ export class XExchange {
    * @param maxPriorityFeePerGas (Optional) Maximum tip per gas you want to pay
    */
   async executeTrade(wallet: UserSigner, trade: ExpectedTrade): Promise<Transaction> {
-    const pairContract = await this.getPairSmartContract(trade.trade.pairAddress.bech32());
+    const pairContract = this.getPairSmartContract(trade.trade.pairAddress.bech32());
     let interaction: Interaction;
     const tolerance = this.config.slippagePct / 100;
 
@@ -325,14 +286,10 @@ export class XExchange {
     return transaction;
   }
 
-  private async getPairSmartContract(pairAddress: string): Promise<SmartContract> {
-    const jsonContent: string = await promises.readFile(this.config.pairAbi, {
-      encoding: 'utf8',
-    });
-    const json = JSON.parse(jsonContent);
+  private getPairSmartContract(pairAddress: string): SmartContract {
     return new SmartContract({
       address: Address.newFromBech32(pairAddress),
-      abi: AbiRegistry.create(json),
+      abi: this._pairAbi,
     });
   }
 }
