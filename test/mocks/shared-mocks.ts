@@ -32,6 +32,19 @@ export const mockConfigStorage: Record<string, any> = {
   'ethereum-mainnet.nativeCurrencySymbol': 'ETH',
   'ethereum-goerli.nodeURL': 'https://goerli.infura.io/v3/test',
   'ethereum-goerli.nativeCurrencySymbol': 'ETH',
+  // MultiversX configurations
+  'multiversx-mainnet.chainID': 1,
+  'multiversx-mainnet.nodeURL': 'https://gateway.multiversx.com',
+  'multiversx-mainnet.nativeCurrencySymbol': 'EGLD',
+  'multiversx-mainnet.swapProvider': 'xexchange/amm',
+  'multiversx-mainnet.minGasPrice': 0.1,
+  'multiversx.defaultNetwork': 'mainnet',
+  'multiversx.defaultWallet': 'erd1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6gq4hu',
+  // xExchange configurations
+  'xexchange.slippagePct': 1,
+  'xexchange.gasLimitEstimate': 25000000,
+  'xexchange.routerAbi': 'src/connectors/xexchange/router.abi.json',
+  'xexchange.pairAbi': 'src/connectors/xexchange/pair.abi.json',
   // Connector configurations
   'jupiter.slippagePct': 1,
   'jupiter.priorityLevel': 'medium',
@@ -56,11 +69,14 @@ export const mockConfigManagerV2 = {
       'ethereum-goerli': {},
       'solana-mainnet-beta': {},
       'solana-devnet': {},
+      multiversx: {},
+      'multiversx-mainnet': {},
       uniswap: {},
       jupiter: {},
       meteora: {},
       raydium: {},
       orca: {},
+      xexchange: {},
     },
     allConfigurations: mockConfigStorage,
   }),
@@ -142,6 +158,11 @@ export const mockEthereumChainConfig = {
   rpcProvider: 'url',
 };
 
+export const mockMultiversxChainConfig = {
+  defaultNetwork: 'mainnet',
+  defaultWallet: 'erd1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6gq4hu',
+};
+
 // Setup all common mocks
 export function setupCommonMocks(options: { skipLogger?: boolean } = {}) {
   // Mock logger only if not skipped
@@ -175,6 +196,11 @@ export function setupCommonMocks(options: { skipLogger?: boolean } = {}) {
   jest.mock('../../src/chains/ethereum/ethereum.config', () => ({
     ...jest.requireActual('../../src/chains/ethereum/ethereum.config'),
     getEthereumChainConfig: jest.fn().mockReturnValue(mockEthereumChainConfig),
+  }));
+
+  jest.mock('../../src/chains/multiversx/multiversx.config', () => ({
+    ...jest.requireActual('../../src/chains/multiversx/multiversx.config'),
+    getMultiversxChainConfig: jest.fn().mockReturnValue(mockMultiversxChainConfig),
   }));
 
   // Mock fs for token lists
@@ -231,5 +257,16 @@ export function resetAllMocks() {
     'orca.slippagePct': 1,
     'uniswap.slippagePct': '0.01',
     'uniswap.ttl': 300,
+    'multiversx-mainnet.chainID': 1,
+    'multiversx-mainnet.nodeURL': 'https://gateway.multiversx.com',
+    'multiversx-mainnet.nativeCurrencySymbol': 'EGLD',
+    'multiversx-mainnet.swapProvider': 'xexchange/amm',
+    'multiversx-mainnet.minGasPrice': 0.1,
+    'multiversx.defaultNetwork': 'mainnet',
+    'multiversx.defaultWallet': 'erd1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6gq4hu',
+    'xexchange.slippagePct': 1,
+    'xexchange.gasLimitEstimate': 25000000,
+    'xexchange.routerAbi': 'src/connectors/xexchange/router.abi.json',
+    'xexchange.pairAbi': 'src/connectors/xexchange/pair.abi.json',
   });
 }
