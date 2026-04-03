@@ -1,4 +1,4 @@
-import { FastifyPluginAsync } from 'fastify';
+import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 
 import {
   StatusRequestSchema,
@@ -9,7 +9,7 @@ import {
 import { logger } from '../../../services/logger';
 import { Multiversx } from '../multiversx';
 
-export async function getMultiversxStatus(network: string): Promise<StatusResponseType> {
+export async function getMultiversxStatus(fastify: FastifyInstance, network: string): Promise<StatusResponseType> {
   try {
     const multiversx = await Multiversx.getInstance(network);
     const chain = multiversx.chain;
@@ -44,7 +44,7 @@ export async function getMultiversxStatus(network: string): Promise<StatusRespon
     };
   } catch (error) {
     logger.error(`Error getting Multiversx status: ${error.message}`);
-    throw new Error(`Failed to get Multiversx status: ${error.message}`);
+    throw fastify.httpErrors.internalServerError(`Failed to get Multiversx status: ${error.message}`);
   }
 }
 
@@ -68,7 +68,7 @@ export const statusRoute: FastifyPluginAsync = async (fastify) => {
       const { network } = request.query;
       try {
         // This will handle node timeout internally
-        return await getMultiversxStatus(network);
+        return await getMultiversxStatus(fastify, network);
       } catch (error) {
         // This will catch any other unexpected errors
         logger.error(`Error in Multiversx status endpoint: ${error.message}`);
