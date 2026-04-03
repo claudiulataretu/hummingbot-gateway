@@ -6,6 +6,13 @@
       "type": "string",
       "description": "Default network for Ethereum operations"
     },
+    "defaultNetworks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of networks to query for balance operations. If not specified, falls back to defaultNetwork only."
+    },
     "defaultWallet": {
       "type": "string",
       "description": "Default wallet address for examples and testing"
@@ -15,12 +22,8 @@
       "enum": ["url", "infura"],
       "default": "url",
       "description": "RPC provider to use: 'url' for standard nodeURL from network config, 'infura' for Infura service across all networks"
-    },
-    "etherscanAPIKey": {
-      "type": "string",
-      "description": "Etherscan API key for gas price estimates (works across all Etherscan V2 supported chains)"
     }
   },
   "required": ["defaultNetwork", "defaultWallet"],
-  "additionalProperties": false
+  "additionalProperties": true
 }

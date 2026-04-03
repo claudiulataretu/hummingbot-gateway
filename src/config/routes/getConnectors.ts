@@ -7,6 +7,7 @@ import { XExchangeConfig } from '#src/connectors/xexchange/xexchange.config';
 import { ZeroXConfig } from '../../connectors/0x/0x.config';
 import { JupiterConfig } from '../../connectors/jupiter/jupiter.config';
 import { MeteoraConfig } from '../../connectors/meteora/meteora.config';
+import { OrcaConfig } from '../../connectors/orca/orca.config';
 import { PancakeswapSolConfig } from '../../connectors/pancakeswap-sol/pancakeswap-sol.config';
 import { RaydiumConfig } from '../../connectors/raydium/raydium.config';
 import { UniswapConfig } from '../../connectors/uniswap/uniswap.config';
@@ -76,6 +77,12 @@ export const connectorsConfig = [
     trading_types: [...XExchangeConfig.tradingTypes],
     chain: XExchangeConfig.chain,
     networks: [...XExchangeConfig.networks],
+  },
+  {
+    name: 'orca',
+    trading_types: [...OrcaConfig.tradingTypes],
+    chain: OrcaConfig.chain,
+    networks: [...OrcaConfig.networks],
   },
 ];
 
