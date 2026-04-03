@@ -1,8 +1,11 @@
 import { FastifyPluginAsync, FastifyInstance } from 'fastify';
 
-import { EthereumPollRequest } from '#src/chains/ethereum/schemas';
-
-import { PollRequestType, PollResponseType, PollResponseSchema } from '../../../schemas/chain-schema';
+import {
+  PollRequestSchema,
+  PollRequestType,
+  PollResponseType,
+  PollResponseSchema,
+} from '../../../schemas/chain-schema';
 import { logger } from '../../../services/logger';
 import { Multiversx } from '../multiversx';
 
@@ -72,7 +75,7 @@ export const pollRoute: FastifyPluginAsync = async (fastify) => {
       schema: {
         description: 'Poll Multiversx transaction status',
         tags: ['/chain/multiversx'],
-        body: EthereumPollRequest,
+        body: PollRequestSchema,
         response: {
           200: PollResponseSchema,
         },

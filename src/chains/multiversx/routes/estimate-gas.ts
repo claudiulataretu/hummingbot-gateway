@@ -1,7 +1,11 @@
 import { FastifyPluginAsync } from 'fastify';
 
-import { EthereumEstimateGasRequest } from '#src/chains/ethereum/schemas';
-import { EstimateGasRequestType, EstimateGasResponse, EstimateGasResponseSchema } from '#src/schemas/chain-schema';
+import {
+  EstimateGasRequestSchema,
+  EstimateGasRequestType,
+  EstimateGasResponse,
+  EstimateGasResponseSchema,
+} from '#src/schemas/chain-schema';
 import { logger } from '#src/services/logger';
 
 export async function estimateGasMultiversx(network: string): Promise<EstimateGasResponse> {
@@ -37,7 +41,7 @@ export const estimateGasRoute: FastifyPluginAsync = async (fastify) => {
       schema: {
         description: 'Estimate gas prices for MultiversX transactions',
         tags: ['/chain/multiversx'],
-        querystring: EthereumEstimateGasRequest,
+        querystring: EstimateGasRequestSchema,
         response: {
           200: EstimateGasResponseSchema,
         },

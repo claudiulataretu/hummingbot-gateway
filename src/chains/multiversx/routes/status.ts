@@ -1,8 +1,11 @@
 import { FastifyPluginAsync } from 'fastify';
 
-import { EthereumStatusRequest } from '#src/chains/ethereum/schemas';
-
-import { StatusRequestType, StatusResponseType, StatusResponseSchema } from '../../../schemas/chain-schema';
+import {
+  StatusRequestSchema,
+  StatusRequestType,
+  StatusResponseType,
+  StatusResponseSchema,
+} from '../../../schemas/chain-schema';
 import { logger } from '../../../services/logger';
 import { Multiversx } from '../multiversx';
 
@@ -55,7 +58,7 @@ export const statusRoute: FastifyPluginAsync = async (fastify) => {
       schema: {
         description: 'Get Multiversx chain status',
         tags: ['/chain/multiversx'],
-        querystring: EthereumStatusRequest,
+        querystring: StatusRequestSchema,
         response: {
           200: StatusResponseSchema,
         },

@@ -114,7 +114,7 @@ const swaggerOptions = {
         name: '/connector/pancakeswap',
         description: 'PancakeSwap EVM connector endpoints',
       },
-      { name: '/connector/xexchange', descriptin: 'xExchange connector endpoints' },
+      { name: '/connector/xexchange', description: 'xExchange connector endpoints' },
     ],
     components: {
       parameters: {
