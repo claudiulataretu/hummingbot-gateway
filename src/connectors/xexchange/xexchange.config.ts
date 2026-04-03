@@ -3,8 +3,7 @@ import { AvailableNetworks } from '#src/services/base';
 import { ConfigManagerV2 } from '../../services/config-manager-v2';
 
 export namespace XExchangeConfig {
-  // Supported networks for Uniswap
-  // See https://docs.uniswap.org/protocol/reference/deployments
+  // Supported networks for xExchange
   export const chain = 'multiversx';
   export const networks = ['mainnet'];
   export type Network = string;

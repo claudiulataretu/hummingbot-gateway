@@ -25,7 +25,7 @@ import { pancakeswapRoutes } from './connectors/pancakeswap/pancakeswap.routes';
 import { pancakeswapSolRoutes } from './connectors/pancakeswap-sol/pancakeswap-sol.routes';
 import { raydiumRoutes } from './connectors/raydium/raydium.routes';
 import { uniswapRoutes } from './connectors/uniswap/uniswap.routes';
-import { xExchageRoutes } from './connectors/xexchange/xexchange.routes';
+import { xExchangeRoutes } from './connectors/xexchange/xexchange.routes';
 import { getHttpsOptions } from './https';
 import { poolRoutes } from './pools/pools.routes';
 import { ConfigManagerV2 } from './services/config-manager-v2';
@@ -287,7 +287,7 @@ const configureGatewayServer = () => {
     app.register(pancakeswapSolRoutes, { prefix: '/connectors/pancakeswap-sol' });
 
     // xExchange routes
-    app.register(xExchageRoutes.amm, { prefix: '/connectors/xexchange/amm' });
+    app.register(xExchangeRoutes.amm, { prefix: '/connectors/xexchange/amm' });
   };
 
   // Register routes on main server

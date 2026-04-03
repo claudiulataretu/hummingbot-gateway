@@ -18,8 +18,8 @@ const xexchangeAmmRoutesWrapper: FastifyPluginAsync = async (fastify) => {
   });
 };
 
-export const xExchageRoutes = {
+export const xExchangeRoutes = {
   amm: xexchangeAmmRoutesWrapper,
 };
 
-export default xExchageRoutes;
+export default xExchangeRoutes;

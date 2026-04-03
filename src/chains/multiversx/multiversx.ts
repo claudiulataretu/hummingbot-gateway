@@ -47,7 +47,7 @@ export class Multiversx {
     logger.info(`Initializing Multiversx connector for network: ${network}, nodeURL: ${this.rpcUrl}`);
     this.network = network;
     this.nativeTokenSymbol = config.nativeCurrencySymbol;
-    this.minGasPrice = config.minGasPrice || 0.1; // Default to 0.1 GWEI if not specified
+    this.minGasPrice = config.minGasPrice || 0.1; // Default to 0.1 (MultiversX native gas unit) if not specified
   }
 
   public static async getInstance(network: string): Promise<Multiversx> {

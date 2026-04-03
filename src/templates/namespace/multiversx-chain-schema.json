@@ -4,7 +4,7 @@
   "properties": {
     "defaultNetwork": {
       "type": "string",
-      "description": "Default network for Ethereum operations"
+      "description": "Default network for MultiversX operations"
     },
     "defaultWallet": {
       "type": "string",
