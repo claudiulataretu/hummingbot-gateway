@@ -201,7 +201,7 @@ export const quoteSwapRoute: FastifyPluginAsync = async (fastify) => {
         const quoteTokenInfo = xexchange.getTokenByName(quoteToken);
 
         // If poolAddress is not provided, look it up by token pair
-        if (!baseTokenInfo && !quoteTokenInfo) {
+        if (!baseTokenInfo || !quoteTokenInfo) {
           throw fastify.httpErrors.badRequest(
             sanitizeErrorMessage('Tokens not found: {}', !baseTokenInfo ? baseToken : quoteToken),
           );

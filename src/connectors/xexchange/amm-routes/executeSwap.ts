@@ -24,7 +24,7 @@ export async function executeAmmSwap(
   slippagePct: number,
 ): Promise<SwapExecuteResponseType> {
   const multiversx = await Multiversx.getInstance(network);
-  await multiversx.init();
+  if (!multiversx.ready()) await multiversx.init();
 
   const xexchange = await XExchange.getInstance(network);
   const baseTokenInfo = xexchange.getTokenByName(baseToken);

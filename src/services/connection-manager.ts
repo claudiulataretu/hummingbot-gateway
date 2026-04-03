@@ -44,7 +44,7 @@ export async function getChainInstance(chain: string, network: string): Promise<
     connection = await Ethereum.getInstance(network);
   } else if (chainLower === 'solana') {
     connection = await Solana.getInstance(network);
-  } else if (chain === 'multiversx') {
+  } else if (chainLower === 'multiversx') {
     connection = await Multiversx.getInstance(network);
   } else {
     connection = undefined;

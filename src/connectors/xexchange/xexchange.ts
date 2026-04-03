@@ -316,7 +316,7 @@ export class XExchange {
     }
     const account = await this.multiversx.provider.getAccount(wallet.getAddress());
     interaction
-      .withGasLimit(24000000)
+      .withGasLimit(this.config.gasLimitEstimate)
       .withChainID(this.chainId.toString())
       .withSender(wallet.getAddress())
       .withNonce(account.nonce);
