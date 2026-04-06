@@ -19,21 +19,6 @@ jest.mock('../../../../src/chains/multiversx/multiversx.config', () => ({
     defaultWallet: 'erd1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6gq4hu',
   }),
 }));
-// uniswap/schemas imports uniswap.config → ConfigManagerV2; mock to break the chain
-jest.mock('../../../../src/connectors/uniswap/schemas', () => ({
-  UniswapAmmExecuteSwapRequest: {
-    type: 'object',
-    properties: {
-      walletAddress: { type: 'string' },
-      network: { type: 'string' },
-      baseToken: { type: 'string' },
-      quoteToken: { type: 'string' },
-      amount: { type: 'number' },
-      side: { type: 'string', enum: ['BUY', 'SELL'] },
-      slippagePct: { type: 'number' },
-    },
-  },
-}));
 
 const PAIR_ADDRESS = 'erd1qqqqqqqqqqqqqpgqeel2kumf0r8ffyhth7pqdujjat9nx0862jpsg2pqaq';
 const WALLET_ADDRESS = 'erd1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq6gq4hu';

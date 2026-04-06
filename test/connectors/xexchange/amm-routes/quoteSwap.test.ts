@@ -120,9 +120,9 @@ describe('quoteAmmSwap function', () => {
     expect(minAmountOutRaw).toBeCloseTo(expectedMin, -3);
   });
 
-  it('should rethrow insufficient liquidity errors', async () => {
+  it('should rethrow insufficient liquidity errors from xExchange contract', async () => {
     const mockXExchange = buildMockXExchange();
-    const reserveError = Object.assign(new Error('Not enough reserves'), { isInsufficientReservesError: true });
+    const reserveError = new Error('execution failed: insufficient liquidity');
     mockXExchange.estimateSellTrade.mockRejectedValue(reserveError);
 
     await expect(quoteAmmSwap(mockXExchange as any, mockWegld, mockUsdc, 1, 'SELL')).rejects.toThrow(
@@ -176,6 +176,7 @@ describe('GET /quote-swap', () => {
     expect(body).toHaveProperty('amountIn');
     expect(body).toHaveProperty('amountOut');
     expect(body).toHaveProperty('poolAddress');
+    expect(typeof body.poolAddress).toBe('string');
     expect(body).toHaveProperty('minAmountOut');
     expect(body).toHaveProperty('slippagePct', 1);
   });

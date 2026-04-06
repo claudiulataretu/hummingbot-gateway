@@ -6,10 +6,6 @@
       "type": "number",
       "description": "Default slippage percentage (e.g., 2 for 2%)"
     },
-    "maximumHops": {
-      "type": "integer",
-      "description": "Maximum number of hops to consider for each swap"
-    },
     "gasLimitEstimate": {
       "type": "number",
       "description": "Gas limit for a single swap"
@@ -24,5 +20,5 @@
     }
   },
   "additionalProperties": false,
-  "required": ["slippagePct", "maximumHops", "gasLimitEstimate", "routerAbi", "pairAbi"]
+  "required": ["slippagePct", "gasLimitEstimate", "routerAbi", "pairAbi"]
 }

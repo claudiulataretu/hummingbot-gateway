@@ -121,8 +121,8 @@ describe('XExchange', () => {
   });
 
   describe('findDefaultPool', () => {
-    it('should return the pair address from the router contract', async () => {
-      const mockPairAddress = { bech32: () => PAIR_ADDRESS };
+    it('should return the pair address string from the router contract', async () => {
+      const mockPairAddress = { toBech32: () => PAIR_ADDRESS };
       parseQueryResponseSpy = jest
         .spyOn(ResultsParser.prototype, 'parseQueryResponse')
         .mockReturnValue({ firstValue: { valueOf: () => mockPairAddress } } as any);
@@ -131,13 +131,13 @@ describe('XExchange', () => {
       const result = await xexchange.findDefaultPool(mockWegld, mockUsdc);
 
       expect(mockProvider.queryContract).toHaveBeenCalledTimes(1);
-      expect(result).toBe(mockPairAddress);
+      expect(result).toBe(PAIR_ADDRESS);
     });
   });
 
   describe('estimateSellTrade', () => {
     it('should return trade and expectedAmount for EXACT_INPUT', async () => {
-      const mockPairAddress = { bech32: () => PAIR_ADDRESS };
+      const mockPairAddress = { toBech32: () => PAIR_ADDRESS };
       const amount = new BigNumber('1000000000000000000'); // 1 WEGLD in raw
 
       parseQueryResponseSpy = jest
@@ -155,12 +155,12 @@ describe('XExchange', () => {
       expect(result.trade.outputToken).toBe(USDC_ID);
       expect(result.trade.inputAmount).toBe(amount.toFixed());
       expect(result.trade.outputAmount).toBe('148500000');
-      expect(result.trade.pairAddress).toBe(mockPairAddress);
+      expect(result.trade.pairAddress).toBe(PAIR_ADDRESS);
       expect(mockProvider.queryContract).toHaveBeenCalledTimes(3);
     });
 
     it('should calculate priceImpact correctly', async () => {
-      const mockPairAddress = { bech32: () => PAIR_ADDRESS };
+      const mockPairAddress = { toBech32: () => PAIR_ADDRESS };
       const amount = new BigNumber('1000000000000000000');
 
       parseQueryResponseSpy = jest
@@ -178,7 +178,7 @@ describe('XExchange', () => {
 
   describe('estimateBuyTrade', () => {
     it('should return trade and expectedAmount for EXACT_OUTPUT', async () => {
-      const mockPairAddress = { bech32: () => PAIR_ADDRESS };
+      const mockPairAddress = { toBech32: () => PAIR_ADDRESS };
       const amount = new BigNumber('148500000'); // desired USDC output
 
       parseQueryResponseSpy = jest
@@ -201,7 +201,7 @@ describe('XExchange', () => {
   describe('executeTrade', () => {
     const mockTrade = {
       trade: {
-        pairAddress: { bech32: () => PAIR_ADDRESS },
+        pairAddress: PAIR_ADDRESS,
         tradeType: TradeType.EXACT_INPUT,
         inputToken: WEGLD_ID,
         outputToken: USDC_ID,

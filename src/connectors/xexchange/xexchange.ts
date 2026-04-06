@@ -94,7 +94,7 @@ export class XExchange {
    * Given a token's symbol, return the connector's native representation of the token.
    */
   public getTokenByName(tokenName: string): Token | null {
-    // Just use getTokenByAddress since ethereum.getToken handles both symbols and addresses
+    // multiversx.getToken handles both symbol and name lookups
     return this.multiversx.getToken(tokenName);
   }
 
@@ -120,7 +120,7 @@ export class XExchange {
     const queryResult = await this.multiversx.provider.queryContract(interaction.buildQuery());
     const result = new ResultsParser().parseQueryResponse(queryResult, interaction.getEndpoint());
 
-    const pairAddress = result.firstValue?.valueOf();
+    const pairAddress = result.firstValue?.valueOf().toBech32();
 
     return pairAddress;
   }
@@ -144,8 +144,8 @@ export class XExchange {
     let queryResult = await this.multiversx.provider.queryContract(interaction.buildQuery());
     let result = new ResultsParser().parseQueryResponse(queryResult, interaction.getEndpoint());
 
-    const pairAddress = result.firstValue?.valueOf();
-    const pairContract = this.getPairSmartContract(pairAddress.bech32());
+    const pairAddress = result.firstValue?.valueOf().toBech32();
+    const pairContract = this.getPairSmartContract(pairAddress);
 
     interaction = pairContract.methodsExplicit.getEquivalent([
       TokenIdentifierValue.esdtTokenIdentifier(baseToken),
@@ -199,8 +199,8 @@ export class XExchange {
     let queryResult = await this.multiversx.provider.queryContract(interaction.buildQuery());
     let result = new ResultsParser().parseQueryResponse(queryResult, interaction.getEndpoint());
 
-    const pairAddress = result.firstValue?.valueOf();
-    const pairContract = this.getPairSmartContract(pairAddress.bech32());
+    const pairAddress = result.firstValue?.valueOf().toBech32();
+    const pairContract = this.getPairSmartContract(pairAddress);
 
     interaction = pairContract.methodsExplicit.getEquivalent([
       TokenIdentifierValue.esdtTokenIdentifier(baseToken),
@@ -237,21 +237,13 @@ export class XExchange {
   }
 
   /**
-   * Given a wallet and a Uniswap trade, try to execute it on blockchain.
+   * Given a wallet and a trade, build and return a signed-ready transaction for xExchange.
    *
-   * @param wallet Wallet
-   * @param trade Expected trade
-   * @param gasPrice Base gas price, for pre-EIP1559 transactions
-   * @param uniswapRouter Router smart contract address
-   * @param ttl How long the swap is valid before expiry, in seconds
-   * @param _abi Router contract ABI
-   * @param gasLimit Gas limit
-   * @param nonce (Optional) EVM transaction nonce
-   * @param maxFeePerGas (Optional) Maximum total fee per gas you want to pay
-   * @param maxPriorityFeePerGas (Optional) Maximum tip per gas you want to pay
+   * @param wallet Signer wallet
+   * @param trade Expected trade (from estimateSellTrade or estimateBuyTrade)
    */
   async executeTrade(wallet: UserSigner, trade: ExpectedTrade): Promise<Transaction> {
-    const pairContract = this.getPairSmartContract(trade.trade.pairAddress.bech32());
+    const pairContract = this.getPairSmartContract(trade.trade.pairAddress);
     let interaction: Interaction;
     const tolerance = this.config.slippagePct / 100;
 

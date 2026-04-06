@@ -75,8 +75,8 @@ export async function quoteAmmSwap(
     };
   } catch (error) {
     logger.error(`Error quoting AMM swap: ${error.message}`);
-    // Check for insufficient reserves error from Uniswap SDK
-    if (error.isInsufficientReservesError || error.name === 'InsufficientReservesError') {
+    // Check for insufficient liquidity from the xExchange pair contract
+    if (error.message?.includes('insufficient liquidity') || error.message?.includes('execution failed')) {
       throw new Error(`Insufficient liquidity in pool for ${baseToken.address}-${quoteToken.address}`);
     }
     throw error;

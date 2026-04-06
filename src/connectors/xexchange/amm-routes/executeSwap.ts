@@ -1,11 +1,10 @@
 import { UserSigner } from '@multiversx/sdk-core/out';
-import { TradeType } from '@uniswap/sdk';
+import { TradeType } from '@uniswap/sdk-core';
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 
 import { Multiversx } from '#src/chains/multiversx/multiversx';
 import { getMultiversxChainConfig } from '#src/chains/multiversx/multiversx.config';
-import { UniswapAmmExecuteSwapRequest } from '#src/connectors/uniswap/schemas';
-import { ExecuteSwapRequestType } from '#src/schemas/amm-schema';
+import { ExecuteSwapRequest, ExecuteSwapRequestType } from '#src/schemas/amm-schema';
 import { SwapExecuteResponse, SwapExecuteResponseType } from '#src/schemas/router-schema';
 import { logger } from '#src/services/logger';
 
@@ -162,7 +161,7 @@ export const executeSwapRoute: FastifyPluginAsync = async (fastify) => {
       schema: {
         description: 'Execute a swap on xExchange AMM using direct pair',
         tags: ['/connector/xexchange'],
-        body: UniswapAmmExecuteSwapRequest,
+        body: ExecuteSwapRequest,
         response: { 200: SwapExecuteResponse },
       },
     },
@@ -175,9 +174,9 @@ export const executeSwapRoute: FastifyPluginAsync = async (fastify) => {
           amount,
           side = 'SELL',
           slippagePct = 1,
-        } = request.body as typeof UniswapAmmExecuteSwapRequest._type;
+        } = request.body as ExecuteSwapRequestType;
 
-        let { baseToken, quoteToken } = request.body as typeof UniswapAmmExecuteSwapRequest._type;
+        let { baseToken, quoteToken } = request.body as ExecuteSwapRequestType;
 
         baseToken = baseToken === 'EGLD' ? 'WEGLD' : baseToken;
         quoteToken = quoteToken === 'EGLD' ? 'WEGLD' : quoteToken;
