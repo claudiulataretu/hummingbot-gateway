@@ -4,10 +4,20 @@ import { FastifyInstance } from 'fastify';
 import '../../../mocks/app-mocks';
 
 import { gatewayApp } from '../../../../src/app';
+import { Multiversx } from '../../../../src/chains/multiversx/multiversx';
 import { estimateGasMultiversx } from '../../../../src/chains/multiversx/routes/estimate-gas';
+
+jest.mock('../../../../src/chains/multiversx/multiversx');
+
+const mockMultiversx = Multiversx as jest.Mocked<typeof Multiversx>;
 
 describe('MultiversX Estimate Gas Route', () => {
   let fastify: FastifyInstance;
+
+  const mockInstance = {
+    nativeTokenSymbol: 'EGLD',
+    estimateGasPrice: jest.fn().mockResolvedValue({ minGasPrice: 1_000_000_000, minGasLimit: 50_000 }),
+  };
 
   beforeAll(async () => {
     fastify = gatewayApp;
@@ -20,26 +30,38 @@ describe('MultiversX Estimate Gas Route', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockMultiversx.getInstance.mockResolvedValue(mockInstance as any);
+    mockInstance.estimateGasPrice.mockResolvedValue({ minGasPrice: 1_000_000_000, minGasLimit: 50_000 });
   });
 
   describe('estimateGasMultiversx function', () => {
-    it('should return hardcoded gas estimate values', async () => {
+    it('should return gas estimate from network', async () => {
       const result = await estimateGasMultiversx('mainnet');
 
       expect(result).toMatchObject({
-        feePerComputeUnit: 1000000000,
-        denomination: 'EGLD',
-        computeUnits: 50000,
+        feePerComputeUnit: 1_000_000_000,
+        denomination: 'atoms',
+        computeUnits: 50_000,
         feeAsset: 'EGLD',
         fee: expect.any(Number),
         timestamp: expect.any(Number),
       });
     });
 
-    it('should calculate fee correctly (gasPrice * gasLimit / 1e18)', async () => {
+    it('should calculate fee as (minGasPrice * minGasLimit) / 1e18', async () => {
       const result = await estimateGasMultiversx('mainnet');
-      const expectedFee = (1000000000 * 50000) / 1e18;
+      const expectedFee = (1_000_000_000 * 50_000) / 1e18;
       expect(result.fee).toBeCloseTo(expectedFee, 10);
+    });
+
+    it('should use values returned by estimateGasPrice()', async () => {
+      mockInstance.estimateGasPrice.mockResolvedValue({ minGasPrice: 2_000_000_000, minGasLimit: 60_000 });
+
+      const result = await estimateGasMultiversx('mainnet');
+
+      expect(result.feePerComputeUnit).toBe(2_000_000_000);
+      expect(result.computeUnits).toBe(60_000);
+      expect(result.fee).toBeCloseTo((2_000_000_000 * 60_000) / 1e18, 10);
     });
 
     it('should return a recent timestamp', async () => {
@@ -51,14 +73,13 @@ describe('MultiversX Estimate Gas Route', () => {
       expect(result.timestamp).toBeLessThanOrEqual(after);
     });
 
-    it('should return the same values for any network', async () => {
-      const mainnet = await estimateGasMultiversx('mainnet');
-      const devnet = await estimateGasMultiversx('devnet');
+    it('should propagate fallback values when estimateGasPrice falls back to config', async () => {
+      mockInstance.estimateGasPrice.mockResolvedValue({ minGasPrice: 1_000_000_000, minGasLimit: 50_000 });
 
-      expect(mainnet.feePerComputeUnit).toBe(devnet.feePerComputeUnit);
-      expect(mainnet.computeUnits).toBe(devnet.computeUnits);
-      expect(mainnet.denomination).toBe(devnet.denomination);
-      expect(mainnet.feeAsset).toBe(devnet.feeAsset);
+      const result = await estimateGasMultiversx('mainnet');
+
+      expect(result.feePerComputeUnit).toBe(1_000_000_000);
+      expect(result.computeUnits).toBe(50_000);
     });
   });
 
@@ -73,9 +94,9 @@ describe('MultiversX Estimate Gas Route', () => {
       const data = JSON.parse(response.body);
 
       expect(data).toMatchObject({
-        feePerComputeUnit: 1000000000,
-        denomination: 'EGLD',
-        computeUnits: 50000,
+        feePerComputeUnit: 1_000_000_000,
+        denomination: 'atoms',
+        computeUnits: 50_000,
         feeAsset: 'EGLD',
         fee: expect.any(Number),
         timestamp: expect.any(Number),
@@ -103,7 +124,7 @@ describe('MultiversX Estimate Gas Route', () => {
       const data = JSON.parse(response.body);
 
       expect(typeof data.feePerComputeUnit).toBe('number');
-      expect(data.denomination).toBe('EGLD');
+      expect(data.denomination).toBe('atoms');
       expect(typeof data.computeUnits).toBe('number');
       expect(data.feeAsset).toBe('EGLD');
       expect(typeof data.fee).toBe('number');

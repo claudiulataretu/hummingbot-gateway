@@ -6,29 +6,22 @@ import {
   EstimateGasResponse,
   EstimateGasResponseSchema,
 } from '#src/schemas/chain-schema';
-import { logger } from '#src/services/logger';
+
+import { Multiversx } from '../multiversx';
 
 export async function estimateGasMultiversx(network: string): Promise<EstimateGasResponse> {
-  try {
-    const gasPrice = 1000000000;
-    const DEFAULT_GAS_LIMIT = 50000;
-    // Calculate total fee in GWEI
-    const totalFeeInGwei = gasPrice * DEFAULT_GAS_LIMIT;
+  const multiversx = await Multiversx.getInstance(network);
+  const { minGasPrice, minGasLimit } = await multiversx.estimateGasPrice();
+  const feeInEGLD = (minGasPrice * minGasLimit) / 1e18;
 
-    // Convert GWEI to EGLD (1 EGLD = 10^18 GWEI)
-    const totalFeeInEGLD = totalFeeInGwei / 1e18;
-
-    return {
-      feePerComputeUnit: gasPrice,
-      denomination: 'EGLD',
-      computeUnits: DEFAULT_GAS_LIMIT,
-      feeAsset: 'EGLD',
-      fee: totalFeeInEGLD,
-      timestamp: Date.now(),
-    };
-  } catch (error) {
-    logger.error(`Error estimating gas for network ${network}: ${error.message}`);
-  }
+  return {
+    feePerComputeUnit: minGasPrice,
+    denomination: 'atoms',
+    computeUnits: minGasLimit,
+    feeAsset: multiversx.nativeTokenSymbol,
+    fee: feeInEGLD,
+    timestamp: Date.now(),
+  };
 }
 
 export const estimateGasRoute: FastifyPluginAsync = async (fastify) => {

@@ -6,6 +6,7 @@ export interface MultiversxNetworkConfig {
   nativeCurrencySymbol: string;
   minGasPrice?: number;
   swapProvider?: string;
+  rpcProvider?: string;
 }
 
 export interface MultiversxChainConfig {
@@ -21,6 +22,7 @@ export function getMultiversxNetworkConfig(network: string): MultiversxNetworkCo
     nativeCurrencySymbol: ConfigManagerV2.getInstance().get(namespaceId + '.nativeCurrencySymbol'),
     minGasPrice: ConfigManagerV2.getInstance().get(namespaceId + '.minGasPrice'),
     swapProvider: ConfigManagerV2.getInstance().get(namespaceId + '.swapProvider'),
+    rpcProvider: ConfigManagerV2.getInstance().get(namespaceId + '.rpcProvider'),
   };
 }
 

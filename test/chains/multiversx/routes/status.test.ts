@@ -17,6 +17,7 @@ describe('MultiversX Status Route', () => {
   const mockInstance = {
     chain: 'multiversx',
     rpcUrl: 'https://gateway.multiversx.com',
+    rpcProvider: 'url',
     nativeTokenSymbol: 'EGLD',
     swapProvider: 'xexchange/amm',
     getCurrentBlockNumber: jest.fn(),

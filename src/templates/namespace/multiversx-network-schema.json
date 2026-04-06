@@ -13,6 +13,11 @@
     "minGasPrice": {
       "type": "number",
       "description": "Minimum gas price in EGLD"
+    },
+    "rpcProvider": {
+      "type": "string",
+      "description": "RPC provider name (e.g., 'url')",
+      "default": "url"
     }
   },
   "required": ["chainID", "nodeURL", "nativeCurrencySymbol"],

@@ -29,6 +29,7 @@ export class Multiversx {
   public nativeTokenSymbol: string;
   public chainId: number;
   public rpcUrl: string;
+  public rpcProvider: string;
   public swapProvider: string;
   public minGasPrice: number;
   private _initialized: boolean = false;
@@ -42,6 +43,7 @@ export class Multiversx {
     const config = getMultiversxNetworkConfig(network);
     this.chainId = config.chainID;
     this.rpcUrl = config.nodeURL;
+    this.rpcProvider = config.rpcProvider ?? 'url';
     this.swapProvider = config.swapProvider || '';
     this.provider = new ProxyNetworkProvider(this.rpcUrl);
     logger.info(`Initializing Multiversx connector for network: ${network}, nodeURL: ${this.rpcUrl}`);
@@ -146,7 +148,7 @@ export class Multiversx {
       const tokenInfo = this.getToken(nameOrAddress);
       if (tokenInfo) {
         // Use the actual token symbol as the key, not the input which might be an address
-        tokenMap[tokenInfo.name] = tokenInfo;
+        tokenMap[tokenInfo.symbol] = tokenInfo;
       }
     }
 
@@ -299,9 +301,9 @@ export class Multiversx {
   private async getAllTokenBalances(address: string, balances: Record<string, number>): Promise<void> {
     logger.info(`Checking balances for all ${this.storedTokenList.length} tokens in the token list`);
 
-    for (const token of this.storedTokenList.values()) {
-      const tokenValue = await this.getESDTBalance(address, token.name);
-      balances[token.name] = parseFloat(tokenValueToString(tokenValue));
+    for (const token of this.storedTokenList) {
+      const tokenValue = await this.getESDTBalance(address, token.symbol);
+      balances[token.symbol] = parseFloat(tokenValueToString(tokenValue));
     }
   }
 
@@ -342,6 +344,26 @@ export class Multiversx {
    */
   public async getCurrentBlockNumber(): Promise<number> {
     return (await this.provider.getNetworkStatus()).CurrentRound;
+  }
+
+  /**
+   * Fetch live gas price and minimum gas limit from the network.
+   * Falls back to instance config values if the network call fails.
+   */
+  public async estimateGasPrice(): Promise<{ minGasPrice: number; minGasLimit: number }> {
+    try {
+      const networkConfig = await this.provider.getNetworkConfig();
+      return {
+        minGasPrice: networkConfig.MinGasPrice,
+        minGasLimit: networkConfig.MinGasLimit,
+      };
+    } catch (error) {
+      logger.warn(`Failed to fetch network gas config, falling back to config defaults: ${error.message}`);
+      return {
+        minGasPrice: this.minGasPrice * 1e9,
+        minGasLimit: 50_000,
+      };
+    }
   }
 
   /**
