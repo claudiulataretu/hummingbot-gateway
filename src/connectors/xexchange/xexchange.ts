@@ -284,4 +284,129 @@ export class XExchange {
       abi: this._pairAbi,
     });
   }
+
+  /**
+   * Fetch pool reserves, LP supply, token IDs, and fee from the pair contract.
+   */
+  async getPoolData(pairAddress: string): Promise<{
+    firstTokenId: string;
+    secondTokenId: string;
+    firstReserve: BigNumber;
+    secondReserve: BigNumber;
+    lpSupply: BigNumber;
+    lpTokenId: string;
+    totalFeePercent: number;
+  }> {
+    const pairContract = this.getPairSmartContract(pairAddress);
+    const firstIdInteraction = pairContract.methodsExplicit.getFirstTokenId([]);
+    const secondIdInteraction = pairContract.methodsExplicit.getSecondTokenId([]);
+    const reservesInteraction = pairContract.methodsExplicit.getReservesAndTotalSupply([]);
+    const feeInteraction = pairContract.methodsExplicit.getTotalFeePercent([]);
+    const lpIdInteraction = pairContract.methodsExplicit.getLpTokenIdentifier([]);
+
+    const [firstIdResult, secondIdResult, reservesResult, feeResult, lpIdResult] = await Promise.all([
+      this.multiversx.provider.queryContract(firstIdInteraction.buildQuery()),
+      this.multiversx.provider.queryContract(secondIdInteraction.buildQuery()),
+      this.multiversx.provider.queryContract(reservesInteraction.buildQuery()),
+      this.multiversx.provider.queryContract(feeInteraction.buildQuery()),
+      this.multiversx.provider.queryContract(lpIdInteraction.buildQuery()),
+    ]);
+
+    const parser = new ResultsParser();
+    const firstTokenId = parser
+      .parseQueryResponse(firstIdResult, firstIdInteraction.getEndpoint())
+      .firstValue?.valueOf()
+      .toString();
+    const secondTokenId = parser
+      .parseQueryResponse(secondIdResult, secondIdInteraction.getEndpoint())
+      .firstValue?.valueOf()
+      .toString();
+    const reservesParsed = parser.parseQueryResponse(reservesResult, reservesInteraction.getEndpoint());
+    const firstReserve = new BigNumber(reservesParsed.firstValue?.valueOf().toFixed());
+    const secondReserve = new BigNumber(reservesParsed.secondValue?.valueOf().toFixed());
+    const lpSupply = new BigNumber(reservesParsed.thirdValue?.valueOf().toFixed());
+    const totalFeePercent = Number(
+      parser.parseQueryResponse(feeResult, feeInteraction.getEndpoint()).firstValue?.valueOf().toString(),
+    );
+    const lpTokenId = parser
+      .parseQueryResponse(lpIdResult, lpIdInteraction.getEndpoint())
+      .firstValue?.valueOf()
+      .toString();
+
+    return { firstTokenId, secondTokenId, firstReserve, secondReserve, lpSupply, lpTokenId, totalFeePercent };
+  }
+
+  /**
+   * Return the ESDT balance of `lpTokenId` held by `walletAddress`.
+   */
+  async getLpTokenBalance(walletAddress: string, lpTokenId: string): Promise<BigNumber> {
+    const addressObj = Address.newFromBech32(walletAddress);
+    try {
+      const tokenBalance = await (this.multiversx.provider as any).getFungibleTokenOfAccount(addressObj, lpTokenId);
+      return new BigNumber(tokenBalance.balance.toString());
+    } catch {
+      return new BigNumber(0);
+    }
+  }
+
+  /**
+   * Build a signed-ready addLiquidity transaction for the given pair.
+   */
+  async buildAddLiquidityTx(
+    wallet: UserSigner,
+    pairAddress: string,
+    firstTokenId: string,
+    firstAmount: BigNumber,
+    secondTokenId: string,
+    secondAmount: BigNumber,
+    firstAmountMin: BigNumber,
+    secondAmountMin: BigNumber,
+  ): Promise<Transaction> {
+    const pairContract = this.getPairSmartContract(pairAddress);
+    const account = await this.multiversx.provider.getAccount(wallet.getAddress());
+
+    const interaction = pairContract.methodsExplicit
+      .addLiquidity([
+        new BigUIntValue(BigInt(firstAmountMin.toFixed())),
+        new BigUIntValue(BigInt(secondAmountMin.toFixed())),
+      ])
+      .withMultiESDTNFTTransfer([
+        TokenTransfer.fungibleFromBigInteger(firstTokenId, firstAmount),
+        TokenTransfer.fungibleFromBigInteger(secondTokenId, secondAmount),
+      ])
+      .withGasLimit(this.config.gasLimitEstimate)
+      .withChainID(this.chainId.toString())
+      .withSender(wallet.getAddress())
+      .withNonce(account.nonce);
+
+    return interaction.buildTransaction();
+  }
+
+  /**
+   * Build a signed-ready removeLiquidity transaction for the given pair.
+   */
+  async buildRemoveLiquidityTx(
+    wallet: UserSigner,
+    pairAddress: string,
+    lpTokenId: string,
+    lpAmount: BigNumber,
+    firstAmountMin: BigNumber,
+    secondAmountMin: BigNumber,
+  ): Promise<Transaction> {
+    const pairContract = this.getPairSmartContract(pairAddress);
+    const account = await this.multiversx.provider.getAccount(wallet.getAddress());
+
+    const interaction = pairContract.methodsExplicit
+      .removeLiquidity([
+        new BigUIntValue(BigInt(firstAmountMin.toFixed())),
+        new BigUIntValue(BigInt(secondAmountMin.toFixed())),
+      ])
+      .withSingleESDTTransfer(TokenTransfer.fungibleFromBigInteger(lpTokenId, lpAmount))
+      .withGasLimit(this.config.gasLimitEstimate)
+      .withChainID(this.chainId.toString())
+      .withSender(wallet.getAddress())
+      .withNonce(account.nonce);
+
+    return interaction.buildTransaction();
+  }
 }
