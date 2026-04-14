@@ -228,6 +228,15 @@ export class TokenService {
         }
         break;
 
+      case SupportedChain.MULTIVERSX:
+        // Validate ESDT token identifier (format: TICKER-xxxxxx)
+        if (!/^[A-Z0-9]{2,10}-[0-9a-f]{6,}$/.test(token.address)) {
+          throw new Error(
+            `Invalid MultiversX token identifier: ${token.address}. Expected format: TICKER-xxxxxx (e.g. WEGLD-bd4d79)`,
+          );
+        }
+        break;
+
       default:
         throw new Error(`Unsupported chain for validation: ${chain}`);
     }

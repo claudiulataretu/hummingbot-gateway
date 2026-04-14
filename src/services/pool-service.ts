@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { promisify } from 'util';
 
+import { Address } from '@multiversx/sdk-core';
 import { PublicKey } from '@solana/web3.js';
 import { ethers } from 'ethers';
 import * as fse from 'fs-extra';
@@ -98,6 +99,8 @@ export class PoolService {
         return SupportedChain.ETHEREUM;
       case 'solana':
         return SupportedChain.SOLANA;
+      case 'multiversx':
+        return SupportedChain.MULTIVERSX;
       default:
         throw new Error(`Unsupported chain '${connectorInfo.chain}' for connector: ${connector}`);
     }
@@ -308,6 +311,21 @@ export class PoolService {
       }
       if (!ethers.utils.isAddress(pool.quoteTokenAddress)) {
         throw new Error('Invalid Ethereum quote token address');
+      }
+    } else if (chain === SupportedChain.MULTIVERSX) {
+      // Validate MultiversX pool address (bech32 erd1... format)
+      try {
+        Address.newFromBech32(pool.address);
+      } catch {
+        throw new Error('Invalid MultiversX pool address');
+      }
+      // Validate ESDT token identifiers (format: TICKER-xxxxxx)
+      const esdtIdentifierRegex = /^[A-Z0-9]{2,10}-[0-9a-f]{6,}$/;
+      if (!esdtIdentifierRegex.test(pool.baseTokenAddress)) {
+        throw new Error(`Invalid MultiversX token identifier for base token: ${pool.baseTokenAddress}`);
+      }
+      if (!esdtIdentifierRegex.test(pool.quoteTokenAddress)) {
+        throw new Error(`Invalid MultiversX token identifier for quote token: ${pool.quoteTokenAddress}`);
       }
     }
 
