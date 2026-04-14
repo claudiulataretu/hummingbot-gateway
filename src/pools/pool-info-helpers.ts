@@ -5,6 +5,7 @@
 import { FastifyInstance } from 'fastify';
 
 import { Ethereum } from '../chains/ethereum/ethereum';
+import { Multiversx } from '../chains/multiversx/multiversx';
 import { Solana } from '../chains/solana/solana';
 import { connectorsConfig } from '../config/routes/getConnectors';
 import { PoolInfo as AmmPoolInfo } from '../schemas/amm-schema';
@@ -20,12 +21,12 @@ interface PoolInfoResult {
 /**
  * Get chain type for a connector from config
  */
-function getConnectorChain(connector: string): 'solana' | 'ethereum' | null {
+function getConnectorChain(connector: string): 'solana' | 'ethereum' | 'multiversx' | null {
   const config = connectorsConfig.find((c) => c.name === connector);
   if (!config) {
     return null;
   }
-  return config.chain as 'solana' | 'ethereum';
+  return config.chain as 'solana' | 'ethereum' | 'multiversx';
 }
 
 /**
@@ -146,6 +147,28 @@ export async function fetchPoolInfo(
           feePct: feePct,
         };
       }
+    } else if (chain === 'multiversx') {
+      const connectorModule = await import(`../connectors/${connector}/${connector}`);
+      const ConnectorClass = Object.values(connectorModule).find(
+        (exp: any) => exp.getInstance && typeof exp.getInstance === 'function',
+      ) as any;
+
+      if (!ConnectorClass) {
+        throw new Error(`Connector class not found for: ${connector}`);
+      }
+
+      const instance = await ConnectorClass.getInstance(network);
+
+      if (type === 'amm') {
+        const poolData = await instance.getPoolData(poolAddress);
+        poolInfo = {
+          baseTokenAddress: poolData.firstTokenId,
+          quoteTokenAddress: poolData.secondTokenId,
+          feePct: poolData.totalFeePercent / 1000,
+        };
+      } else {
+        throw new Error(`Connector ${connector} does not support ${type} pool info`);
+      }
     } else {
       logger.error(`Unsupported chain: ${chain} for connector: ${connector}`);
       return null;
@@ -185,7 +208,14 @@ export async function resolveTokenSymbols(
     }
 
     // Get chain instance and tokens from local list only
-    const chain = chainType === 'solana' ? await Solana.getInstance(network) : await Ethereum.getInstance(network);
+    let chain: Solana | Ethereum | Multiversx;
+    if (chainType === 'solana') {
+      chain = await Solana.getInstance(network);
+    } else if (chainType === 'multiversx') {
+      chain = await Multiversx.getInstance(network);
+    } else {
+      chain = await Ethereum.getInstance(network);
+    }
 
     // Use local token list only - don't fetch from blockchain
     const baseToken = await chain.getToken(baseTokenAddress);
